@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ClickShield — Security Test Suite & Live Demo Hub</title>
+  <style>
+    :root {
+      --bg: #0A0A0A;
+      --card-bg: #141414;
+      --border: #262626;
+      --gold: #E5B83B;
+      --text: #F5F5F5;
+      --muted: #888888;
+      --red: #DC2626;
+      --green: #16A34A;
+    }
+    body {
+      margin: 0;
+      padding: 40px 20px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+      display: flex;
+      justify-content: center;
+    }
+    .container {
+      max-width: 800px;
+      width: 100%;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      font-size: 11px;
+      font-family: monospace;
+      color: var(--gold);
+      background: rgba(229, 184, 59, 0.1);
+      border: 1px solid rgba(229, 184, 59, 0.3);
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 12px;
+    }
+    h1 {
+      font-size: 28px;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      margin: 0 0 8px 0;
+      color: #fff;
+    }
+    p.desc {
+      color: var(--muted);
+      font-size: 14px;
+      margin: 0 0 32px 0;
+      line-height: 1.5;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.2s ease;
+    }
+    .card:hover {
+      border-color: var(--gold);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+    }
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .card-tag {
+      font-family: monospace;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 3px;
+    }
+    .tag-critical {
+      background: rgba(220, 38, 38, 0.2);
+      color: #F87171;
+      border: 1px solid rgba(220, 38, 38, 0.4);
+    }
+    .tag-safe {
+      background: rgba(22, 163, 74, 0.2);
+      color: #4ADE80;
+      border: 1px solid rgba(22, 163, 74, 0.4);
+    }
+    .tag-clipboard {
+      background: rgba(229, 184, 59, 0.2);
+      color: var(--gold);
+      border: 1px solid rgba(229, 184, 59, 0.4);
+    }
+    .card-desc {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+      margin: 0 0 12px 0;
+    }
+    .expected {
+      font-size: 11px;
+      font-family: monospace;
+      background: #0E0E0E;
+      padding: 8px 12px;
+      border-radius: 4px;
+      border-left: 2px solid var(--gold);
+      color: #CCC;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="badge">ClickShield Test Harness</div>
+    <h1>Behavioral Security Verification Hub</h1>
+    <p class="desc">
+      Use the scenarios below to safely evaluate ClickShield's real-time detection, Shadow DOM intervention overlays, and false-positive resilience in Google Chrome.
+    </p>
+
+    <div class="grid">
+      <a href="./simulated-clickfix.html" class="card">
+        <div class="card-header">
+          <span class="card-title">Scenario 1: Simulated ClickFix Attack</span>
+          <span class="card-tag tag-critical">CRITICAL THREAT (Score 85)</span>
+        </div>
+        <p class="card-desc">
+          Mimics a deceptive human verification prompt directing the user to press Win+R and paste PowerShell code.
+        </p>
+        <div class="expected">
+          Expected: Badge turns RED (85) &middot; Shadow DOM warning modal appears immediately &middot; Safe exit offered.
+        </div>
+      </a>
+
+      <a href="./simulated-clipboard.html" class="card">
+        <div class="card-header">
+          <span class="card-title">Scenario 2: Programmatic Clipboard Hijacking</span>
+          <span class="card-tag tag-clipboard">CLIPBOARD INTERCEPTION</span>
+        </div>
+        <p class="card-desc">
+          A verification button that attempts to silently copy obfuscated PowerShell code into the system clipboard.
+        </p>
+        <div class="expected">
+          Expected: MAIN-world monitor intercepts writeText &middot; Flags command payload &middot; Prevents execution.
+        </div>
+      </a>
+
+      <a href="./developer-documentation.html" class="card">
+        <div class="card-header">
+          <span class="card-title">Scenario 3: Developer Technical Documentation</span>
+          <span class="card-tag tag-safe">FALSE POSITIVE CHECK (Score &lt; 30)</span>
+        </div>
+        <p class="card-desc">
+          An educational article discussing PowerShell, Get-Process, and Invoke-WebRequest in a non-coercive context.
+        </p>
+        <div class="expected">
+          Expected: No deceptive triggers detected &middot; Remains in passive monitoring &middot; Zero annoying modals.
+        </div>
+      </a>
+
+      <a href="./normal-website.html" class="card">
+        <div class="card-header">
+          <span class="card-title">Scenario 4: Normal Webpage Baseline</span>
+          <span class="card-tag tag-safe">STATUS: SECURE (Score 0)</span>
+        </div>
+        <p class="card-desc">
+          A standard e-commerce coffee shop page without any command syntax or verification elements.
+        </p>
+        <div class="expected">
+          Expected: Score 0/100 &middot; Green status &middot; Passive monitoring active.
+        </div>
+      </a>
+    </div>
+  </div>
+</body>
+</html>
+

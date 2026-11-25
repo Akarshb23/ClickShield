@@ -9,6 +9,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "preview": "vite preview",
+    "demo": "node scripts/serve-fixtures.js",
     "package": "npm run build && powershell -Command \"Compress-Archive -Path dist/* -DestinationPath clickshield-extension-v0.1.0.zip -Force\""
   },
   "dependencies": {
