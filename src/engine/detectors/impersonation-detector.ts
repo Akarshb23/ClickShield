@@ -56,3 +56,4 @@ export function detectBrandImpersonation(pageText: string, hostname: string): Th
 
   return signals;
 }
+

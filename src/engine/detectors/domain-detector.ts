@@ -40,3 +40,4 @@ export function detectDomainAnomalies(hostname: string): ThreatSignal[] {
 
   return signals;
 }
+

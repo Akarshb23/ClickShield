@@ -46,3 +46,4 @@ export function detectCaptchaAnomalies(context: CaptchaScanContext): ThreatSigna
 
   return signals;
 }
+

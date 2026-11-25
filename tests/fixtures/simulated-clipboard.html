@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Simulated ClickFix Clipboard Interception Test</title>
+  <style>
+    body { font-family: monospace; background: #0c0c0c; color: #e0e0e0; padding: 40px; }
+    .card { background: #181818; border: 1px solid #333; padding: 24px; border-radius: 8px; max-width: 520px; margin: auto; }
+    button { background: #e5b83b; color: #000; font-weight: bold; border: none; padding: 12px 20px; border-radius: 4px; cursor: pointer; margin-top: 15px; }
+    .status { margin-top: 15px; font-size: 12px; color: #888; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Cloudflare Turnstile Verification</h2>
+    <p>Complete verification to prove you are human.</p>
+    <p>Click below to copy your unique verification code:</p>
+    
+    <button id="copy-btn">Verify Human & Copy Code</button>
+    <div id="status" class="status">Click button to simulate clipboard write.</div>
+  </div>
+
+  <script>
+    document.getElementById("copy-btn").addEventListener("click", async () => {
+      // Harmless benign sample with PowerShell syntax for test detection
+      const fakePayload = "powershell -WindowStyle Hidden -Command echo 'BENIGN_TEST_PAYLOAD'";
+      try {
+        await navigator.clipboard.writeText(fakePayload);
+        document.getElementById("status").textContent = "Simulated payload written to clipboard!";
+      } catch (e) {
+        document.getElementById("status").textContent = "Clipboard write blocked or failed: " + e;
+      }
+    });
+  </script>
+</body>
+</html>
+

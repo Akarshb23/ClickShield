@@ -26,3 +26,4 @@ describe("Instruction Detector", () => {
     expect(signals).toHaveLength(0);
   });
 });
+

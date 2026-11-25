@@ -24,3 +24,4 @@ describe("Domain and Impersonation Detectors", () => {
     expect(signals).toHaveLength(0);
   });
 });
+

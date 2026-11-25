@@ -30,6 +30,17 @@
         "src/content/index.ts"
       ],
       "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "js": [
+        "src/injected/clipboard-monitor.ts"
+      ],
+      "world": "MAIN",
+      "run_at": "document_start"
     }
   ],
   "options_ui": {
@@ -43,4 +54,3 @@
     "128": "icons/icon128.png"
   }
 }
-

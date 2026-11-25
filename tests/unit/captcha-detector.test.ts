@@ -25,3 +25,4 @@ describe("Captcha Detector", () => {
     expect(signals).toHaveLength(0);
   });
 });
+

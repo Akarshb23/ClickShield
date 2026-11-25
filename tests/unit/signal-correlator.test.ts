@@ -23,3 +23,4 @@ describe("Signal Correlator", () => {
     expect(verdict.level).toBe("LOW");
   });
 });
+

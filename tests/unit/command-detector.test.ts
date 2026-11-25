@@ -27,3 +27,4 @@ describe("Command Detector", () => {
     expect(signals[0].reason).toContain("living-off-the-land");
   });
 });
+

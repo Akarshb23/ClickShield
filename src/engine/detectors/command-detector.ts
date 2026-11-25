@@ -56,3 +56,4 @@ export function detectExecutionCommands(text: string): ThreatSignal[] {
 
   return signals;
 }
+
