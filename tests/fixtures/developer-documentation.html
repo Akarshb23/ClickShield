@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Microsoft Learn: Getting Started with PowerShell</title>
+  <style>
+    body { font-family: sans-serif; line-height: 1.6; max-width: 800px; margin: 40px auto; padding: 0 20px; color: #333; }
+    pre { background: #f4f4f4; padding: 15px; border-radius: 4px; overflow-x: auto; }
+    code { font-family: monospace; }
+  </style>
+</head>
+<body>
+  <h1>Getting Started with PowerShell</h1>
+  <p>PowerShell is a cross-platform task automation solution made up of a command-line shell, a scripting language, and a configuration management framework.</p>
+
+  <h2>Common Cmdlets</h2>
+  <p>To inspect active processes on your computer, administrators often use the <code>Get-Process</code> cmdlet.</p>
+  
+  <pre><code>Get-Process | Where-Object WorkingSet -gt 100MB</code></pre>
+
+  <p>To test network connectivity and download web content in scripts, PowerShell provides <code>Invoke-WebRequest</code>:</p>
+  <pre><code>Invoke-WebRequest -Uri "https://api.github.com/repos" -OutFile "repos.json"</code></pre>
+
+  <h2>Running PowerShell</h2>
+  <p>You can launch PowerShell from the Windows Start menu or by pressing Windows Key + X and selecting Windows PowerShell.</p>
+</body>
+</html>
+
