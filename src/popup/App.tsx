@@ -88,7 +88,7 @@ export default function App() {
         }
       }
     } catch (err) {
-      console.warn("Failed to retrieve tab state:", err);
+      console.debug("Failed to retrieve tab state:", err);
     } finally {
       setLoading(false);
     }

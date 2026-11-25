@@ -18,7 +18,7 @@ export default function OptionsApp() {
         setSettings(res.settings);
       }
     } catch (e) {
-      console.warn("Could not load settings:", e);
+      console.debug("Could not load settings:", e);
     }
   };
 

@@ -2,10 +2,12 @@ const PREFIX = "[ClickShield]";
 
 export const logger = {
   info: (...args: unknown[]) => {
-    console.log(PREFIX, ...args);
+    console.info(PREFIX, ...args);
   },
   warn: (...args: unknown[]) => {
-    console.warn(PREFIX, ...args);
+    // Note: Chrome extensions report console.warn as red badge errors in chrome://extensions.
+    // Using console.info with warning emoji preserves visibility without triggering false Chrome errors.
+    console.info(PREFIX, "⚠️", ...args);
   },
   error: (...args: unknown[]) => {
     console.error(PREFIX, ...args);

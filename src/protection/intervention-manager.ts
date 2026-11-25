@@ -6,6 +6,7 @@ import { logger } from "../shared/utils/logger";
 export class InterventionManager {
   private static userDismissed = false;
   private static isInitialized = false;
+  private static isOverlayActive = false;
 
   static initialize() {
     if (this.isInitialized) return;
@@ -14,7 +15,7 @@ export class InterventionManager {
     // Arm copy interceptor
     CopyInterceptor.arm({
       onIntervention: (reason) => {
-        logger.warn("Intervention triggered:", reason);
+        logger.info("Active intervention triggered:", reason);
       },
     });
   }
@@ -22,7 +23,9 @@ export class InterventionManager {
   static evaluateAndIntervene(scanResult: ScanResult): void {
     this.initialize();
 
-    if (this.userDismissed) return;
+    // Prevent duplicate overlays or running inside child frames
+    if (this.userDismissed || this.isOverlayActive) return;
+    if (typeof window !== "undefined" && window !== window.top) return;
 
     const types = new Set(scanResult.signals.map((s) => s.type));
     const isClickFixAttack =
@@ -35,10 +38,12 @@ export class InterventionManager {
       (scanResult.score >= 60 || isClickFixAttack || scanResult.score >= 80) &&
       !WarningOverlay.isVisible()
     ) {
-      logger.warn("Displaying ClickShield intervention overlay for:", scanResult.hostname);
+      this.isOverlayActive = true;
+      logger.info("Displaying ClickShield intervention overlay for:", scanResult.hostname);
 
       WarningOverlay.show(scanResult, () => {
         this.userDismissed = true;
+        this.isOverlayActive = false;
         logger.info("User dismissed ClickShield warning for current session.");
       });
     }
@@ -46,6 +51,7 @@ export class InterventionManager {
 
   static resetSession(): void {
     this.userDismissed = false;
+    this.isOverlayActive = false;
     WarningOverlay.hide();
   }
 }

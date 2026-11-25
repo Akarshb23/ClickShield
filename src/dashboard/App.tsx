@@ -56,7 +56,7 @@ export default function DashboardApp() {
       const settingsRes = await chrome.runtime.sendMessage({ type: "GET_SETTINGS" });
       if (settingsRes?.settings) setSettings(settingsRes.settings);
     } catch (e) {
-      console.warn("Error fetching dashboard data:", e);
+      console.debug("Error fetching dashboard data:", e);
     }
   };
 
