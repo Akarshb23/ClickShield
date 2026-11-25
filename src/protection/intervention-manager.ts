@@ -28,16 +28,18 @@ export class InterventionManager {
     if (typeof window !== "undefined" && window !== window.top) return;
 
     const types = new Set(scanResult.signals.map((s) => s.type));
-    const isClickFixAttack =
-      (types.has("FAKE_CAPTCHA") && types.has("EXECUTION_INSTRUCTION")) ||
-      (types.has("SUSPICIOUS_INSTRUCTION") && types.has("EXECUTION_INSTRUCTION")) ||
-      (types.has("FAKE_CAPTCHA") && types.has("SUSPICIOUS_INSTRUCTION"));
+    const hasDeceptiveLure = types.has("FAKE_CAPTCHA") || types.has("DOMAIN_IMPERSONATION");
+    const hasAttackAction =
+      types.has("EXECUTION_INSTRUCTION") ||
+      types.has("CLIPBOARD_MANIPULATION") ||
+      (types.has("SUSPICIOUS_INSTRUCTION") && types.has("EXECUTION_INSTRUCTION"));
 
-    // Trigger intervention overlay on high/critical threat or confirmed ClickFix attack signature
-    if (
-      (scanResult.score >= 60 || isClickFixAttack || scanResult.score >= 80) &&
-      !WarningOverlay.isVisible()
-    ) {
+    const isClickFixAttack = hasDeceptiveLure && hasAttackAction;
+
+    // Trigger intervention overlay on high threat ClickFix attacks (Score >= 60) or critical threats (Score >= 80)
+    const shouldIntervene = (isClickFixAttack && scanResult.score >= 60) || scanResult.score >= 80;
+
+    if (shouldIntervene && !WarningOverlay.isVisible()) {
       this.isOverlayActive = true;
       logger.info("Displaying ClickShield intervention overlay for:", scanResult.hostname);
 

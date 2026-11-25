@@ -39,8 +39,13 @@ function extractShadowDomData(root: Node): { text: string; snippets: string[] } 
 }
 
 export function scanPage(): ThreatSignal[] {
-  // Avoid scanning inside ClickShield's own UI elements
-  if (typeof document === "undefined" || !document.body) {
+  // Avoid scanning inside ClickShield's own UI elements or test harness
+  if (
+    typeof document === "undefined" ||
+    !document.body ||
+    document.body.hasAttribute("data-clickshield-ignore") ||
+    document.documentElement.hasAttribute("data-clickshield-ignore")
+  ) {
     return [];
   }
 
@@ -66,10 +71,12 @@ export function scanPage(): ThreatSignal[] {
     const cls = (el.className || "").toString().toLowerCase();
     const aria = (el.getAttribute("aria-label") || "").toLowerCase();
     return (
-      /captcha|turnstile|verify|human|robot|check|prove/i.test(text) ||
-      /captcha|turnstile|verify|robot|turnstile/i.test(id) ||
-      /captcha|turnstile|verify|robot|turnstile/i.test(cls) ||
-      /captcha|turnstile|verify|human/i.test(aria)
+      /(\bverify\s+(you\s+are\s+)?(human|not\s+a\s+robot)\b|i'm\s+not\s+a\s+robot|i\s+am\s+not\s+a\s+robot|\b(captcha|turnstile|recaptcha|hcaptcha)\b|\bverify\s+human\b|\bverify\s+checkbox\b)/i.test(
+        text
+      ) ||
+      /[_-]?(captcha|turnstile|recaptcha|hcaptcha|fake-checkbox)[_-]?/i.test(id) ||
+      /[_-]?(captcha|turnstile|recaptcha|hcaptcha|fake-checkbox)[_-]?/i.test(cls) ||
+      /captcha|turnstile|verify\s+human/i.test(aria)
     );
   });
 

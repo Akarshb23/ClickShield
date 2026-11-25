@@ -23,8 +23,10 @@ export function correlateSignals(
   const hasImpersonation = types.has("DOMAIN_IMPERSONATION");
   const hasClipboard = types.has("CLIPBOARD_MANIPULATION");
 
-  // Classic ClickFix signature: Verification + Terminal Execution or Copy instruction
-  const isClickFixAttack = (hasFakeCaptcha && hasExecution) || (hasInstruction && hasExecution);
+  // Classic ClickFix signature: Deceptive verification lure + coercive terminal execution instruction or payload
+  const hasDeceptiveLure = hasFakeCaptcha || hasImpersonation;
+  const hasAttackAction = hasExecution || hasClipboard || (hasInstruction && (hasExecution || hasClipboard));
+  const isClickFixAttack = (hasFakeCaptcha && hasExecution) || (hasDeceptiveLure && hasAttackAction);
 
   let primaryAttackVector = "Standard page analysis";
   let recommendedAction = "Passive monitoring active";
