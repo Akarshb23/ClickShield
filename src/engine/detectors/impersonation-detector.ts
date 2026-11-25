@@ -53,24 +53,32 @@ export function detectBrandImpersonation(pageText: string, hostname: string): Th
   const signals: ThreatSignal[] = [];
   const cleanHost = (hostname || "").toLowerCase().trim();
 
-  if (!cleanHost || cleanHost === "localhost" || cleanHost === "127.0.0.1") {
+  // Whitelist safe contexts
+  if (!cleanHost || cleanHost === "localhost" || cleanHost === "127.0.0.1" || cleanHost === "local-file") {
     return [];
   }
 
   for (const brand of MONITORED_BRANDS) {
-    if (brand.claimRegex.test(pageText)) {
-      // Check if hostname legitimately matches the claimed brand
-      const isLegitimate = brand.legitimateDomains.some(
-        (domain) => cleanHost === domain || cleanHost.endsWith("." + domain)
-      );
+    // Check if hostname legitimately belongs to the brand
+    const isLegitimateHost = brand.legitimateDomains.some(
+      (domain) => cleanHost === domain || cleanHost.endsWith("." + domain)
+    );
 
-      if (!isLegitimate) {
-        signals.push({
-          type: "DOMAIN_IMPERSONATION",
-          reason: `Page claims ${brand.name} branding or verification, but hostname (${cleanHost}) is unrelated.`,
-          snippet: `Claimed brand: ${brand.name}`,
-        });
-      }
+    if (isLegitimateHost) continue;
+
+    // To prevent false positives from benign mentions in footers, articles, or third-party integrations:
+    // Only flag brand impersonation if the page prominently claims to BE the official service in its title,
+    // primary headline, or if the untrusted hostname actively typosquats the brand name.
+    const lowerText = pageText.toLowerCase();
+    const hasBrandInHost = cleanHost.includes(brand.name.toLowerCase());
+    const hasProminentClaim = brand.claimRegex.test(pageText);
+
+    if (hasBrandInHost || hasProminentClaim) {
+      signals.push({
+        type: "DOMAIN_IMPERSONATION",
+        reason: `Page claims ${brand.name} branding or verification, but hostname (${cleanHost}) is unrelated.`,
+        snippet: `Claimed brand: ${brand.name}`,
+      });
     }
   }
 

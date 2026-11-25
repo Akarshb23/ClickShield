@@ -10,14 +10,16 @@ export function detectSuspiciousInstructions(text: string): ThreatSignal[] {
   const ctrlVPattern = /\b(press|hit)?\s*(ctrl|control)\s*[\+\-]\s*v\b/i;
   const pasteEnterPattern = /\bpaste(\s+.*)?\s+(and\s+)?(press|hit)?\s*enter\b/i;
   const pasteGeneral = /\b(right[\s\-]*click\s+and\s+)?paste\s+(it|the\s+(code|command|key|text|script|payload))\b/i;
-  const terminalInstruction =
+  const terminalOpen =
+    /\b(open|launch|run)\s+(the\s+)?(powershell(\.exe)?|cmd(\.exe)?|terminal|command\s+prompt|bash|zsh)\b/i;
+  const terminalDirectPaste =
     /\b(paste.*into|copy.*into|type.*into|paste.*in|run.*in)\s+(the\s+)?(powershell(\.exe)?|cmd(\.exe)?|terminal|command\s+prompt|bash|zsh)\b/i;
   const stepPattern = /(1[\.\)]\s*.*?(win\s*[\+\-]?\s*r|run).*?2[\.\)]\s*.*?(ctrl\s*[\+\-]?\s*v|paste).*?3[\.\)]\s*.*?(enter|ok))/is;
   const macTerminalPattern = /\b(press\s+(cmd|command)\s*[\+\-]\s*space.*?terminal|paste\s+into\s+terminal)\b/i;
 
   const hasWinR = winRPattern.test(lower) || runDialogPattern.test(lower);
   const hasPasteEnter = ctrlVPattern.test(lower) || pasteEnterPattern.test(lower) || pasteGeneral.test(lower);
-  const hasTerminal = terminalInstruction.test(lower) || macTerminalPattern.test(lower);
+  const hasTerminal = terminalDirectPaste.test(lower) || (terminalOpen.test(lower) && hasPasteEnter) || macTerminalPattern.test(lower);
   const hasStepSequence = stepPattern.test(lower);
 
   if (hasStepSequence || (hasWinR && (hasPasteEnter || hasTerminal))) {
@@ -32,7 +34,7 @@ export function detectSuspiciousInstructions(text: string): ThreatSignal[] {
       reason: "Page instructs the user to invoke the operating system Run dialog (Win+R).",
       snippet: "Win+R shortcut instruction.",
     });
-  } else if (hasTerminal || hasPasteEnter) {
+  } else if (hasTerminal) {
     signals.push({
       type: "SUSPICIOUS_INSTRUCTION",
       reason: "Page directs user to paste or execute commands into system terminal.",

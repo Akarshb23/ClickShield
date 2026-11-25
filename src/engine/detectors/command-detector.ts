@@ -7,8 +7,9 @@ export function detectExecutionCommands(text: string): ThreatSignal[] {
   const encodedPsPattern = /powershell.*-(e|enc|encodedcommand)\s+[a-zA-Z0-9+/=]{8,}/i;
   // 2. Hidden window or execution policy bypass flags
   const stealthFlagsPattern = /powershell.*(-w(indowstyle)?\s+h(idden)?|-nop(rofile)?|-noni(nteractive)?|-ep\s+bypass|-executionpolicy\s+bypass)/i;
-  // 3. Download & Execute cradle patterns
-  const downloadCradlePattern = /(irm|iex|invoke-expression|invoke-webrequest|iwr|invoke-restmethod|downloadstring|downloadfile|start-process|system\.net\.webclient)\b/i;
+  // 3. Download & Execute cradle patterns - strictly requiring word boundary before command names
+  const downloadCradlePattern =
+    /\b(irm|iex|invoke-expression|invoke-webrequest|iwr|invoke-restmethod|downloadstring|downloadfile|start-process|system\.net\.webclient)\b/i;
   // 4. Windows native utility abuses (LOLBins)
   const lolbinsPattern = /\b(mshta(\.exe)?|certutil(\.exe)?\s+(-urlcache|-decode|-f)|bitsadmin(\.exe)?\s+\/transfer|regsvr32(\.exe)?.*(\/s|\/u|\/i:)|rundll32(\.exe)?|wscript(\.exe)?|cscript(\.exe)?)\b/i;
   // 5. Shell invocation with command execution switches

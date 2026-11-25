@@ -51,52 +51,76 @@ function handleDynamicThreat(signal: ThreatSignal) {
 }
 
 function initContentScript() {
-  logger.info("Content script initialized on", window.location.hostname || window.location.href);
+  const isTopFrame = typeof window !== "undefined" && window === window.top;
 
-  // Initialize intervention system
-  InterventionManager.initialize();
+  if (isTopFrame) {
+    logger.info("ClickShield initialized on top frame:", window.location.hostname || window.location.href);
 
-  // 1. Initial page scan
-  executeScan(true);
+    // Initialize intervention system
+    InterventionManager.initialize();
 
-  // 2. Initialize DOM Mutation Observer
-  const domObserver = new DynamicDomObserver({
-    onMutation: () => executeScan(false),
-    debounceMs: 500,
-  });
+    // 1. Initial page scan
+    executeScan(true);
 
-  const targetNode = document.body || document.documentElement;
-  if (targetNode) {
-    domObserver.start(targetNode);
-  }
+    // 2. Initialize DOM Mutation Observer on top frame
+    const domObserver = new DynamicDomObserver({
+      onMutation: () => executeScan(false),
+      debounceMs: 500,
+    });
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => {
-      executeScan(true);
-      if (document.body) domObserver.start(document.body);
+    const targetNode = document.body || document.documentElement;
+    if (targetNode) {
+      domObserver.start(targetNode);
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", () => {
+        executeScan(true);
+        if (document.body) domObserver.start(document.body);
+      });
+    }
+
+    // 3. Initialize Clipboard Guard
+    ClipboardGuard.initialize({
+      onThreatDetected: handleDynamicThreat,
+    });
+
+    // 4. Initialize User Interaction Monitor
+    InteractionMonitor.initialize({
+      onInteractionThreat: handleDynamicThreat,
+    });
+
+    // 5. Listen for manual rescan or live query triggers from popup
+    chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+      if (message.type === "TRIGGER_RESCAN" || message.type === "GET_LIVE_SCAN") {
+        InterventionManager.resetSession();
+        const result = executeScan(true);
+        sendResponse({ status: "OK", result });
+        return true;
+      }
+      return true;
+    });
+  } else {
+    // Inside subframes/iframes: Only guard against active clipboard manipulation and interaction exploits.
+    // Subframes must NEVER scan static DOM or overwrite the top frame's tab score.
+    ClipboardGuard.initialize({
+      onThreatDetected: (signal) => {
+        chrome.runtime.sendMessage({
+          type: "SUBFRAME_THREAT",
+          payload: signal,
+        }).catch(() => {});
+      },
+    });
+
+    InteractionMonitor.initialize({
+      onInteractionThreat: (signal) => {
+        chrome.runtime.sendMessage({
+          type: "SUBFRAME_THREAT",
+          payload: signal,
+        }).catch(() => {});
+      },
     });
   }
-
-  // 3. Initialize Clipboard Guard
-  ClipboardGuard.initialize({
-    onThreatDetected: handleDynamicThreat,
-  });
-
-  // 4. Initialize User Interaction Monitor
-  InteractionMonitor.initialize({
-    onInteractionThreat: handleDynamicThreat,
-  });
-
-  // 5. Listen for manual rescan or live query triggers from popup
-  chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-    if (message.type === "TRIGGER_RESCAN" || message.type === "GET_LIVE_SCAN") {
-      InterventionManager.resetSession();
-      const result = executeScan(true);
-      sendResponse({ status: "OK", result });
-      return true;
-    }
-    return true;
-  });
 }
 
 if (document.readyState === "loading") {

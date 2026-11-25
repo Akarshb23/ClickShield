@@ -55,5 +55,20 @@ describe("False Positive Prevention & Calibration", () => {
 
     expect(signals).toHaveLength(0);
   });
+
+  it("does not flag common English words ending in 'irm' (confirm, affirm, law firm) as download cradles", async () => {
+    const { detectExecutionCommands } = await import("../../src/engine/detectors/command-detector");
+    const checkoutText = "Please confirm your payment with Affirm or your preferred banking firm.";
+    const signals = detectExecutionCommands(checkoutText);
+
+    expect(signals).toHaveLength(0);
+  });
+
+  it("does not flag ordinary keyboard shortcut mentions (Ctrl+V) as suspicious terminal commands", () => {
+    const docText = "To paste copied text in the editor, press Ctrl+V on your keyboard.";
+    const signals = detectSuspiciousInstructions(docText);
+
+    expect(signals).toHaveLength(0);
+  });
 });
 

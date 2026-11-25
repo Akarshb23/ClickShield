@@ -1,7 +1,7 @@
 import { StorageManager } from "../storage/storage-manager";
 import { BADGE_COLORS } from "../shared/constants/risk-levels";
 import { logger } from "../shared/utils/logger";
-import type { ScanResult, RiskLevel } from "../shared/types/signal";
+import type { ScanResult, RiskLevel, ThreatSignal } from "../shared/types/signal";
 import type { TabState } from "../shared/types/messages";
 
 chrome.runtime.onInstalled.addListener(async (details) => {
@@ -35,6 +35,12 @@ async function handleIncomingMessage(
     case "SCAN_RESULT": {
       const tabId = sender.tab?.id;
       if (tabId === undefined) return { success: false };
+
+      // In Chrome MV3 with all_frames: true, only the top frame (frameId === 0)
+      // defines the tab's page scan result and badge. Subframes must never overwrite the tab state.
+      if (sender.frameId !== 0) {
+        return { success: false, ignored: "subframe" };
+      }
 
       const scan: ScanResult = payload;
       if (typeof scan.score !== "number" || scan.score < 0 || scan.score > 100) {
@@ -105,6 +111,55 @@ async function handleIncomingMessage(
       }
 
       return { success: true, effectiveScore };
+    }
+
+    case "SUBFRAME_THREAT": {
+      const tabId = sender.tab?.id;
+      if (tabId === undefined) return { success: false };
+
+      const signal: ThreatSignal = payload;
+      if (!signal || !signal.type) return { success: false };
+
+      const settings = await StorageManager.getSettings();
+      const currentState = await StorageManager.getTabState(tabId);
+      const hostname = currentState?.hostname || sender.tab?.url || "unknown";
+      const isAllowed = await StorageManager.isAllowlisted(hostname);
+
+      if (!settings.protectionEnabled || isAllowed) {
+        return { success: false };
+      }
+
+      // Add signal to existing tab state if present
+      if (currentState) {
+        const updatedSignals = [...currentState.signals, signal];
+        const newScore = Math.min(100, (currentState.score || 0) + 25);
+        currentState.score = newScore;
+        currentState.level = newScore >= 80 ? "CRITICAL" : newScore >= 60 ? "HIGH" : "SUSPICIOUS";
+        currentState.signals = updatedSignals;
+        await StorageManager.setTabState(tabId, currentState);
+
+        try {
+          await chrome.action.setBadgeText({ tabId, text: String(newScore) });
+          await chrome.action.setBadgeBackgroundColor({
+            tabId,
+            color: BADGE_COLORS[currentState.level as RiskLevel] || BADGE_COLORS.CRITICAL,
+          });
+        } catch {}
+      }
+
+      await StorageManager.addThreatRecord({
+        id: `threat-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+        hostname,
+        url: sender.tab?.url || "",
+        timestamp: Date.now(),
+        riskScore: 85,
+        riskLevel: "CRITICAL",
+        signals: [signal.type],
+        details: [signal.reason],
+        action: "CLIPBOARD_INTERCEPTED",
+      });
+
+      return { success: true };
     }
 
     case "GET_TAB_STATE": {

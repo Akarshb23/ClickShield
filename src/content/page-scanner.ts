@@ -51,14 +51,13 @@ export function scanPage(): ThreatSignal[] {
 
   const titleText = document.title || "";
   const bodyInnerText = document.body.innerText || "";
-  const bodyTextContent = document.body.textContent || "";
-  const rawText = `${titleText} ${bodyInnerText} ${bodyTextContent}`;
+  const rawText = `${titleText} ${bodyInnerText}`;
   const hostname = window.location.hostname || "local-file";
 
   // 1. Gather iframe sources to check for legitimate CAPTCHA providers
   const iframes = Array.from(document.querySelectorAll("iframe"));
   const iframeSources = iframes
-    .map((iframe) => iframe.src || iframe.getAttribute("data-src") || iframe.getAttribute("srcdoc") || "")
+    .map((iframe) => iframe.src || iframe.getAttribute("data-src") || "")
     .filter(Boolean);
 
   // 2. Identify potential fake captcha checkboxes or deceptive verification elements
@@ -80,7 +79,7 @@ export function scanPage(): ThreatSignal[] {
     );
   });
 
-  // 3. Extract text from code blocks, inputs (including hidden), textareas, and pre tags
+  // 3. Extract text from code blocks, inputs, textareas, and data-clipboard attributes
   const codeElements = Array.from(
     document.querySelectorAll("code, pre, blockquote, input, textarea, [data-clipboard-text], [data-copy], [data-payload], [data-command]")
   );
@@ -93,13 +92,12 @@ export function scanPage(): ThreatSignal[] {
         content = el.textContent || "";
       }
 
-      // Check data attributes for hidden payloads
       const dataClipboard = el.getAttribute("data-clipboard-text") || el.getAttribute("data-copy") || el.getAttribute("data-payload") || el.getAttribute("data-command") || "";
       return `${content} ${dataClipboard}`;
     })
     .join(" ");
 
-  // 4. Shadow DOM recursive traversal for modern modular web applications
+  // 4. Shadow DOM recursive traversal for modular web applications
   const shadowDomData = extractShadowDomData(document.body);
   const shadowText = `${shadowDomData.text} ${shadowDomData.snippets.join(" ")}`;
 
@@ -110,7 +108,7 @@ export function scanPage(): ThreatSignal[] {
   // Run Modular Detectors
   allSignals.push(
     ...detectCaptchaAnomalies({
-      text: combinedContent,
+      text: rawText,
       hasIframes: iframes.length > 0,
       iframeSources,
       hasFakeCheckbox,
@@ -120,7 +118,7 @@ export function scanPage(): ThreatSignal[] {
   allSignals.push(...detectSuspiciousInstructions(combinedContent));
   allSignals.push(...detectExecutionCommands(combinedContent));
   allSignals.push(...detectDomainAnomalies(hostname));
-  allSignals.push(...detectBrandImpersonation(combinedContent, hostname));
+  allSignals.push(...detectBrandImpersonation(titleText, hostname));
 
   return allSignals;
 }
