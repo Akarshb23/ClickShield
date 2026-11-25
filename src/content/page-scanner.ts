@@ -1,67 +1,53 @@
 import type { ThreatSignal } from "../shared/types/signal";
+import { detectCaptchaAnomalies } from "../engine/detectors/captcha-detector";
+import { detectSuspiciousInstructions } from "../engine/detectors/instruction-detector";
+import { detectExecutionCommands } from "../engine/detectors/command-detector";
+import { detectDomainAnomalies } from "../engine/detectors/domain-detector";
+import { detectBrandImpersonation } from "../engine/detectors/impersonation-detector";
 
 export function scanPage(): ThreatSignal[] {
-  // Never scan inside ClickShield's own UI elements
-  if (document.querySelector("[data-clickshield-ignore]")) {
-    // handled inside DOM traversal
+  // Avoid scanning inside ClickShield's own UI elements
+  if (typeof document === "undefined" || !document.body) {
+    return [];
   }
 
-  const text = (document.body?.innerText || "").toLowerCase();
-  if (!text) return [];
+  const rawText = document.body.innerText || "";
+  const hostname = window.location.hostname || "";
 
-  const signals: ThreatSignal[] = [];
+  // 1. Gather iframe sources to check for legitimate CAPTCHA providers
+  const iframes = Array.from(document.querySelectorAll("iframe"));
+  const iframeSources = iframes
+    .map((iframe) => iframe.src || iframe.getAttribute("data-src") || "")
+    .filter(Boolean);
 
-  // 1. CAPTCHA & Verification patterns
-  const hasVerificationPrompt =
-    /verify (that )?you are human|i am not a robot|confirm you are not a robot|security verification|ddos protection by|cloudflare verification/i.test(
-      text
-    );
-
-  // 2. Clipboard instructions
-  const hasCopyPastePrompt =
-    /copy (and )?paste|paste into (the )?(terminal|powershell|run dialog|command prompt)|press ctrl \+ v|press win \+ r/i.test(
-      text
-    );
-
-  // 3. Operating System / Command execution instructions
-  const hasExecutionPrompt =
-    /open (the )?(terminal|powershell|cmd|run dialog)|powershell -[a-z]|cmd\.exe|curl |wget |irm |iex |mshta |bitsadmin/i.test(
-      text
-    );
-
-  // Correlate heuristic findings
-  if (hasVerificationPrompt && hasExecutionPrompt) {
-    signals.push({
-      type: "FAKE_CAPTCHA",
-      reason: "Verification prompt requests operating-system execution or terminal interaction.",
-    });
-  }
-
-  if (hasVerificationPrompt && hasCopyPastePrompt) {
-    signals.push({
-      type: "SUSPICIOUS_INSTRUCTION",
-      reason: "Verification requests copying and pasting instructions into system utilities.",
-    });
-  }
-
-  if (hasExecutionPrompt && hasCopyPastePrompt) {
-    signals.push({
-      type: "EXECUTION_INSTRUCTION",
-      reason: "Page instructs user to copy and execute terminal or PowerShell commands.",
-    });
-  }
-
-  // Check for suspicious hidden buttons or fake captcha checkboxes
+  // 2. Identify potential fake captcha checkboxes or deceptive verification elements
   const fakeCheckboxes = document.querySelectorAll(
-    "button[class*='captcha'], div[class*='captcha'], div[class*='turnstile'], [id*='captcha-box']"
+    "button[class*='captcha'], div[class*='captcha'], div[class*='turnstile'], [id*='captcha'], [id*='cf-turnstile']"
   );
-  if (fakeCheckboxes.length > 0 && hasExecutionPrompt) {
-    signals.push({
-      type: "FAKE_CAPTCHA",
-      reason: "Deceptive verification element detected with correlated system execution commands.",
-    });
-  }
 
-  return signals;
+  // 3. Extract text from code blocks, input values, and pre tags where payloads hide
+  const codeSnippets = Array.from(document.querySelectorAll("code, pre, blockquote, input[type='text']"))
+    .map((el) => (el instanceof HTMLInputElement ? el.value : el.textContent || ""))
+    .join(" ");
+
+  const combinedContent = `${rawText} ${codeSnippets}`;
+
+  const allSignals: ThreatSignal[] = [];
+
+  // Run Modular Detectors
+  allSignals.push(
+    ...detectCaptchaAnomalies({
+      text: rawText,
+      hasIframes: iframes.length > 0,
+      iframeSources,
+      hasFakeCheckbox: fakeCheckboxes.length > 0,
+    })
+  );
+
+  allSignals.push(...detectSuspiciousInstructions(combinedContent));
+  allSignals.push(...detectExecutionCommands(combinedContent));
+  allSignals.push(...detectDomainAnomalies(hostname));
+  allSignals.push(...detectBrandImpersonation(rawText, hostname));
+
+  return allSignals;
 }
-
