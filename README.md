@@ -6,12 +6,14 @@ ClickShield is a local-first Manifest V3 Chrome extension engineered to detect s
 
 ---
 
-## Key Features
-- **Multi-Vector Intent Analysis**: Analyzes page behavior and instructional sequences rather than static URL reputation.
-- **Weighted Threat Engine**: Transparent scoring system (0–100) mapping to explainable risk levels (`LOW`, `SUSPICIOUS`, `HIGH`, `CRITICAL`).
-- **Cybersecurity Brutalist UI**: Premium black-and-gold interface (`#E5B83B`) with live risk gauges and detection breakdown.
-- **Local-First & Zero Telemetry**: Operates entirely within the browser sandbox with zero external server dependencies.
-- **Full Security Command Center**: Dedicated dashboard for audit logs, telemetry, and domain allowlists.
+## Key Highlights
+
+- **Intent-Based Heuristics**: Evaluates what a webpage directs the user to do rather than relying solely on static URL blocklists.
+- **Multi-Vector Threat Engine**: Calculates a weighted risk score (0–100) mapping to explainable risk levels (`LOW`, `SUSPICIOUS`, `HIGH`, `CRITICAL`).
+- **Closed Shadow DOM Overlays**: Injects isolated intervention modals that cannot be bypassed or tampered with by hostile page styles.
+- **Active Clipboard Protection**: Neutralizes programmatic clipboard write hooks containing dangerous command syntax (`powershell`, `cmd`, `irm | iex`).
+- **100% Local-First & Zero Telemetry**: Threat evaluation, logs, and allowlists remain entirely inside the local browser sandbox.
+- **Cyberpunk Brutalist UI**: Dark & gold theme with animated GSAP risk meters and Recharts threat telemetry.
 
 ---
 
@@ -22,34 +24,43 @@ ClickShield is a local-first Manifest V3 Chrome extension engineered to detect s
 npm install
 ```
 
-### 2. Build the Extension
+### 2. Build Extension
 ```bash
 npm run build
 ```
-This outputs the ready-to-load extension into the `dist/` directory.
+The compiled, ready-to-load extension is placed in `dist/`.
 
-### 3. Load into Google Chrome
-1. Open Google Chrome and navigate to `chrome://extensions/`.
+### 3. Load in Google Chrome
+1. Navigate to `chrome://extensions/` in Chrome.
 2. Toggle on **Developer mode** in the top-right corner.
-3. Click **Load unpacked**.
-4. Select the `dist/` directory from the `ClickShield` project root.
-5. Pin ClickShield to your Chrome toolbar.
+3. Click **Load unpacked** and select the `dist/` directory inside `ClickShield`.
+4. Pin the ClickShield shield icon to your toolbar.
 
-### 4. Run Unit Tests
+### 4. Run Interactive Demo & Test Scenarios
+```bash
+npm run demo
+```
+- **Test Suite Hub**: `http://localhost:4173/`
+- **Marketing Showcase & Simulator**: `http://localhost:4173/website`
+
+### 5. Run Unit Tests
 ```bash
 npm run test
 ```
 
+### 6. Create Web Store ZIP Package
+```bash
+npm run package
+```
+Generates `clickshield-extension-v0.1.0.zip` ready for Chrome Web Store Developer Console upload.
+
 ---
 
-## Safe Testing Fixtures
-To verify detection without running real malware, test fixtures are provided under `tests/fixtures/`:
-- `tests/fixtures/simulated-clickfix.html`: Harmless simulation of a fake human verification prompt directing PowerShell paste.
-- `tests/fixtures/legitimate-captcha.html`: Normal baseline webpage.
+## Documentation
 
----
-
-## Architecture & Documentation
-- [System Architecture](file:///d:/ClickSheild/docs/ARCHITECTURE.md)
-- [Threat Model](file:///d:/ClickSheild/docs/THREAT_MODEL.md)
-
+- [System Architecture](docs/ARCHITECTURE.md)
+- [Detection Rules & Scoring Model](docs/DETECTION_RULES.md)
+- [Threat Model & Security Boundaries](docs/THREAT_MODEL.md)
+- [Testing & Quality Assurance Guide](docs/TESTING.md)
+- [Hackathon Demo & Presentation Script](docs/DEMO_GUIDE.md)
+- [Privacy Policy](docs/PRIVACY_POLICY.md)
