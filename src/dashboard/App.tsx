@@ -14,6 +14,7 @@ import {
   BarChart2,
   Search,
   Filter,
+  Download,
 } from "lucide-react";
 import { ThreatChart } from "./components/ThreatChart";
 import { ThreatDetailsModal } from "./components/ThreatDetailsModal";
@@ -64,6 +65,25 @@ export default function DashboardApp() {
       await chrome.runtime.sendMessage({ type: "CLEAR_HISTORY" });
       setThreats([]);
     }
+  };
+
+  const handleExportData = () => {
+    const exportPayload = {
+      exportDate: new Date().toISOString(),
+      statistics: stats,
+      allowlist: allowlist,
+      threatHistory: threats,
+    };
+
+    const blob = new Blob([JSON.stringify(exportPayload, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `clickshield-security-audit-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const handleAddAllowlist = async (domainToAdd: string) => {
@@ -194,6 +214,13 @@ export default function DashboardApp() {
           </div>
 
           <div className="flex items-center gap-3">
+            <button
+              onClick={handleExportData}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-[#161616] hover:bg-[#202020] border border-[#2D2D2D] text-xs font-mono text-neutral-300 transition-colors cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5 text-[#E5B83B]" /> Export Audit Log
+            </button>
+
             <button
               onClick={() => chrome.runtime.openOptionsPage()}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-[#161616] hover:bg-[#202020] border border-[#2D2D2D] text-xs font-mono text-neutral-300 transition-colors cursor-pointer"
@@ -399,14 +426,23 @@ export default function DashboardApp() {
                 </p>
               </div>
 
-              {threats.length > 0 && (
+              <div className="flex items-center gap-2">
                 <button
-                  onClick={handleClearHistory}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-[#2B1111] hover:bg-[#3D1414] border border-[#DC2626]/40 text-xs font-mono text-[#F87171] transition-colors cursor-pointer"
+                  onClick={handleExportData}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-[#1C1C1C] hover:bg-[#252525] border border-[#333] text-xs font-mono text-neutral-200 transition-colors cursor-pointer"
                 >
-                  <Trash2 className="w-3.5 h-3.5" /> Clear History
+                  <Download className="w-3.5 h-3.5 text-[#E5B83B]" /> Export JSON
                 </button>
-              )}
+
+                {threats.length > 0 && (
+                  <button
+                    onClick={handleClearHistory}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-[#2B1111] hover:bg-[#3D1414] border border-[#DC2626]/40 text-xs font-mono text-[#F87171] transition-colors cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" /> Clear History
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Search & Filter toolbar */}
