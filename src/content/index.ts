@@ -3,6 +3,7 @@ import { calculateRisk } from "../engine/risk-engine";
 import { ClipboardGuard } from "./clipboard-guard";
 import { DynamicDomObserver } from "./dom-observer";
 import { InteractionMonitor } from "./event-monitor";
+import { InterventionManager } from "../protection/intervention-manager";
 import { logger } from "../shared/utils/logger";
 import type { ThreatSignal, ScanResult } from "../shared/types/signal";
 
@@ -19,6 +20,9 @@ function executeScan() {
       url: window.location.href,
     });
 
+    // Check if intervention overlay should be displayed
+    InterventionManager.evaluateAndIntervene(result);
+
     if (result.score !== lastScore) {
       lastScore = result.score;
       chrome.runtime
@@ -34,7 +38,6 @@ function executeScan() {
 }
 
 function handleDynamicThreat(signal: ThreatSignal) {
-  // Add to dynamic signals if not already present
   const exists = dynamicSignals.some(
     (s) => s.type === signal.type && s.reason === signal.reason
   );
@@ -45,7 +48,10 @@ function handleDynamicThreat(signal: ThreatSignal) {
 }
 
 function initContentScript() {
-  logger.info("Content script with behavioral guard initialized on", window.location.hostname);
+  logger.info("Content script with active intervention manager initialized on", window.location.hostname);
+
+  // Initialize intervention system
+  InterventionManager.initialize();
 
   // 1. Initial page scan
   executeScan();
@@ -78,6 +84,7 @@ function initContentScript() {
   // 5. Listen for manual rescan triggers from popup
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message.type === "TRIGGER_RESCAN") {
+      InterventionManager.resetSession();
       executeScan();
       sendResponse({ status: "SCANNING" });
     }
