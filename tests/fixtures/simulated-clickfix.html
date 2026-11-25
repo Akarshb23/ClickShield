@@ -14,10 +14,19 @@
     <h2>Cloud Verification Prompt</h2>
     <p>Please verify that you are human to proceed.</p>
     <p>Instructions: Press Win + R to open run dialog, then copy and paste the command below into powershell:</p>
-    <code>echo "TEST_BENIGN_VERIFICATION_SAMPLE"</code>
+    <code id="payload">powershell -WindowStyle Hidden -Command echo 'BENIGN_TEST_VERIFICATION'</code>
     <br><br>
     <button id="verify-btn">Verify Human Checkbox</button>
   </div>
+
+  <script>
+    document.getElementById("verify-btn").addEventListener("click", async () => {
+      const code = document.getElementById("payload").innerText;
+      try {
+        await navigator.clipboard.writeText(code);
+      } catch (e) {}
+    });
+  </script>
 </body>
 </html>
 

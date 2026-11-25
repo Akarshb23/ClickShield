@@ -24,8 +24,17 @@ export class InterventionManager {
 
     if (this.userDismissed) return;
 
-    // Trigger intervention overlay on CRITICAL threats (score >= 80)
-    if (scanResult.score >= 80 && !WarningOverlay.isVisible()) {
+    const types = new Set(scanResult.signals.map((s) => s.type));
+    const isClickFixAttack =
+      (types.has("FAKE_CAPTCHA") && types.has("EXECUTION_INSTRUCTION")) ||
+      (types.has("SUSPICIOUS_INSTRUCTION") && types.has("EXECUTION_INSTRUCTION")) ||
+      (types.has("FAKE_CAPTCHA") && types.has("SUSPICIOUS_INSTRUCTION"));
+
+    // Trigger intervention overlay on high/critical threat or confirmed ClickFix attack signature
+    if (
+      (scanResult.score >= 60 || isClickFixAttack || scanResult.score >= 80) &&
+      !WarningOverlay.isVisible()
+    ) {
       logger.warn("Displaying ClickShield intervention overlay for:", scanResult.hostname);
 
       WarningOverlay.show(scanResult, () => {

@@ -220,7 +220,10 @@ export class WarningOverlay {
       </div>
     `;
 
-    document.body.appendChild(this.hostElement);
+    const target = document.body || document.documentElement;
+    if (target) {
+      target.appendChild(this.hostElement);
+    }
 
     // Event listeners for actions
     const leaveBtn = this.shadowRoot.getElementById("btn-leave");

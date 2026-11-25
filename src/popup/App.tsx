@@ -41,16 +41,18 @@ export default function App() {
       const scannable = isScannableUrl(tabUrl);
       setIsScannable(scannable);
 
+      let currentHostname = "unknown";
       if (scannable) {
         try {
           const parsed = new URL(tabUrl);
-          setHostname(parsed.hostname);
+          currentHostname = parsed.hostname || (parsed.protocol === "file:" ? "local-file" : "unknown");
         } catch {
-          setHostname("");
+          currentHostname = "local-file";
         }
       } else {
-        setHostname(tabUrl.split("/")[0] || "restricted");
+        currentHostname = tabUrl.split("/")[0] || "restricted";
       }
+      setHostname(currentHostname);
 
       // Query service worker for stored state
       const response = await chrome.runtime.sendMessage({
@@ -65,7 +67,20 @@ export default function App() {
         setSignals(state.signals || []);
         setIsAllowlisted(Boolean(state.isAllowlisted));
         setProtectionActive(state.protectionEnabled !== false);
-      } else {
+      } else if (scannable) {
+        // Fallback: If no state in session storage, request live scan directly from tab
+        try {
+          const tabRes = await chrome.tabs.sendMessage(activeTab.id, { type: "GET_LIVE_SCAN" });
+          if (tabRes && tabRes.result) {
+            const scan = tabRes.result;
+            setRiskScore(scan.score || 0);
+            setRiskLevel((scan.level as RiskLevel) || "LOW");
+            setSignals(scan.signals || []);
+          }
+        } catch {
+          // Tab might not have content script injected yet or restricted
+        }
+
         // Query global settings
         const settingsRes = await chrome.runtime.sendMessage({ type: "GET_SETTINGS" });
         if (settingsRes?.settings) {
@@ -94,12 +109,17 @@ export default function App() {
     if (!tabId || !isScannable) return;
     setIsScanning(true);
     try {
-      await chrome.tabs.sendMessage(tabId, { type: "TRIGGER_RESCAN" });
-      // Give the content script a moment to complete and report
+      const response = await chrome.tabs.sendMessage(tabId, { type: "TRIGGER_RESCAN" });
+      if (response && response.result) {
+        const scan = response.result;
+        setRiskScore(scan.score || 0);
+        setRiskLevel((scan.level as RiskLevel) || "LOW");
+        setSignals(scan.signals || []);
+      }
       setTimeout(async () => {
         await loadTabInfo();
         setIsScanning(false);
-      }, 700);
+      }, 400);
     } catch {
       setIsScanning(false);
     }

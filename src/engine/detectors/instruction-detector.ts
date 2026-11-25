@@ -9,7 +9,8 @@ export function detectSuspiciousInstructions(text: string): ThreatSignal[] {
   const runDialogPattern = /\b(open|launch)\s+(the\s+)?run\s+dialog\b/i;
   const ctrlVPattern = /\b(press|hit)\s+(ctrl\s*\+\s*v|control\s*\+\s*v)\b/i;
   const pasteEnterPattern = /\bpaste(\s+.*)?\s+and\s+(press|hit)\s+enter\b/i;
-  const terminalInstruction = /\b(open|paste\s+into|launch)\s+(powershell|cmd|terminal|command\s+prompt)\b/i;
+  const terminalInstruction =
+    /\b(open|launch|paste.*into|copy.*into|type.*into|into)\s+(the\s+)?(powershell|cmd|terminal|command\s+prompt)\b/i;
 
   const hasWinR = winRPattern.test(lower) || runDialogPattern.test(lower);
   const hasPasteEnter = ctrlVPattern.test(lower) || pasteEnterPattern.test(lower);

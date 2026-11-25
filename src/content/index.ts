@@ -10,20 +10,20 @@ import type { ThreatSignal, ScanResult } from "../shared/types/signal";
 let dynamicSignals: ThreatSignal[] = [];
 let lastScore = -1;
 
-function executeScan() {
+function executeScan(forceNotify = false): ScanResult | null {
   try {
     const pageSignals = scanPage();
     const combinedSignals = [...pageSignals, ...dynamicSignals];
 
     const result: ScanResult = calculateRisk(combinedSignals, {
-      hostname: window.location.hostname,
+      hostname: window.location.hostname || "local-file",
       url: window.location.href,
     });
 
     // Check if intervention overlay should be displayed
     InterventionManager.evaluateAndIntervene(result);
 
-    if (result.score !== lastScore) {
+    if (forceNotify || result.score !== lastScore || dynamicSignals.length > 0) {
       lastScore = result.score;
       chrome.runtime
         .sendMessage({
@@ -32,8 +32,11 @@ function executeScan() {
         })
         .catch(() => {});
     }
+
+    return result;
   } catch (err) {
     logger.debug("Scan error or context invalidated:", err);
+    return null;
   }
 }
 
@@ -43,30 +46,33 @@ function handleDynamicThreat(signal: ThreatSignal) {
   );
   if (!exists) {
     dynamicSignals.push(signal);
-    executeScan();
+    executeScan(true);
   }
 }
 
 function initContentScript() {
-  logger.info("Content script with active intervention manager initialized on", window.location.hostname);
+  logger.info("Content script initialized on", window.location.hostname || window.location.href);
 
   // Initialize intervention system
   InterventionManager.initialize();
 
   // 1. Initial page scan
-  executeScan();
+  executeScan(true);
 
   // 2. Initialize DOM Mutation Observer
   const domObserver = new DynamicDomObserver({
-    onMutation: executeScan,
+    onMutation: () => executeScan(false),
     debounceMs: 500,
   });
 
-  if (document.body) {
-    domObserver.start(document.body);
-  } else {
+  const targetNode = document.body || document.documentElement;
+  if (targetNode) {
+    domObserver.start(targetNode);
+  }
+
+  if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => {
-      executeScan();
+      executeScan(true);
       if (document.body) domObserver.start(document.body);
     });
   }
@@ -81,12 +87,13 @@ function initContentScript() {
     onInteractionThreat: handleDynamicThreat,
   });
 
-  // 5. Listen for manual rescan triggers from popup
+  // 5. Listen for manual rescan or live query triggers from popup
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-    if (message.type === "TRIGGER_RESCAN") {
+    if (message.type === "TRIGGER_RESCAN" || message.type === "GET_LIVE_SCAN") {
       InterventionManager.resetSession();
-      executeScan();
-      sendResponse({ status: "SCANNING" });
+      const result = executeScan(true);
+      sendResponse({ status: "OK", result });
+      return true;
     }
     return true;
   });

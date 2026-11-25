@@ -6,11 +6,13 @@
   "permissions": [
     "storage",
     "notifications",
-    "webNavigation"
+    "webNavigation",
+    "activeTab",
+    "tabs",
+    "scripting"
   ],
   "host_permissions": [
-    "http://*/*",
-    "https://*/*"
+    "<all_urls>"
   ],
   "background": {
     "service_worker": "src/background/service-worker.ts",
@@ -23,8 +25,7 @@
   "content_scripts": [
     {
       "matches": [
-        "http://*/*",
-        "https://*/*"
+        "<all_urls>"
       ],
       "js": [
         "src/content/index.ts"
@@ -33,8 +34,7 @@
     },
     {
       "matches": [
-        "http://*/*",
-        "https://*/*"
+        "<all_urls>"
       ],
       "js": [
         "src/injected/clipboard-monitor.ts"
