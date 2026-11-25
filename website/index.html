@@ -1,467 +1,1094 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ClickShield — Behavioral Cybersecurity Browser Defense</title>
-  <meta name="description" content="Real-time behavioral Chrome extension protecting users from ClickFix attacks, deceptive verification pages, and dangerous terminal command execution." />
-  <style>
-    :root {
-      --bg: #080808;
-      --surface: #121212;
-      --elevated: #1A1A1A;
-      --border: #262626;
-      --gold: #E5B83B;
-      --gold-hover: #F5CB5C;
-      --text: #F5F5F5;
-      --muted: #888888;
-      --red: #DC2626;
-      --green: #16A34A;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      background: var(--bg);
-      color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      line-height: 1.6;
-      -webkit-font-smoothing: antialiased;
-    }
-    header {
-      border-b: 1px solid var(--border);
-      padding: 18px 32px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: rgba(14, 14, 14, 0.8);
-      backdrop-filter: blur(10px);
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      text-decoration: none;
-      color: inherit;
-    }
-    .brand-icon {
-      width: 32px;
-      height: 32px;
-      border: 1px solid rgba(229, 184, 59, 0.5);
-      background: #171717;
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--gold);
-      font-weight: bold;
-    }
-    .brand-name {
-      font-family: monospace;
-      font-weight: 800;
-      font-size: 15px;
-      letter-spacing: 0.1em;
-      color: var(--gold);
-      text-transform: uppercase;
-    }
-    nav a {
-      color: var(--muted);
-      text-decoration: none;
-      font-family: monospace;
-      font-size: 13px;
-      margin-left: 24px;
-      transition: color 0.2s;
-    }
-    nav a:hover { color: #fff; }
-    .btn-gold {
-      background: var(--gold);
-      color: #000;
-      font-family: monospace;
-      font-weight: 800;
-      font-size: 13px;
-      padding: 10px 20px;
-      border-radius: 4px;
-      text-decoration: none;
-      border: none;
-      cursor: pointer;
-      transition: background 0.2s;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .btn-gold:hover { background: var(--gold-hover); }
-    .btn-secondary {
-      background: #1C1C1C;
-      color: #F5F5F5;
-      font-family: monospace;
-      font-weight: 700;
-      font-size: 13px;
-      padding: 10px 20px;
-      border-radius: 4px;
-      text-decoration: none;
-      border: 1px solid var(--border);
-      transition: all 0.2s;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .btn-secondary:hover { background: #262626; border-color: var(--gold); }
-    .hero {
-      max-width: 1000px;
-      margin: 80px auto 60px;
-      padding: 0 24px;
-      text-align: center;
-    }
-    .tag {
-      display: inline-block;
-      font-family: monospace;
-      font-size: 11px;
-      color: var(--gold);
-      background: rgba(229, 184, 59, 0.1);
-      border: 1px solid rgba(229, 184, 59, 0.3);
-      padding: 4px 12px;
-      border-radius: 100px;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      margin-bottom: 24px;
-    }
-    h1 {
-      font-size: 48px;
-      font-weight: 900;
-      letter-spacing: -0.03em;
-      line-height: 1.15;
-      margin: 0 0 20px 0;
-    }
-    h1 span {
-      background: linear-gradient(135deg, #FFF 40%, var(--gold) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-    p.hero-desc {
-      font-size: 18px;
-      color: var(--muted);
-      max-width: 720px;
-      margin: 0 auto 36px;
-    }
-    .hero-actions {
-      display: flex;
-      justify-content: center;
-      gap: 16px;
-    }
-    .section {
-      max-width: 1000px;
-      margin: 80px auto;
-      padding: 0 24px;
-    }
-    .section-title {
-      text-align: center;
-      margin-bottom: 48px;
-    }
-    .section-title h2 {
-      font-size: 32px;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      margin: 0 0 10px 0;
-    }
-    .section-title p {
-      color: var(--muted);
-      font-size: 15px;
-      margin: 0;
-    }
-    .sim-container {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 32px;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 32px;
-    }
-    .sim-signals h3 {
-      font-family: monospace;
-      font-size: 14px;
-      color: var(--gold);
-      text-transform: uppercase;
-      margin: 0 0 16px 0;
-    }
-    .signal-check {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px;
-      background: #181818;
-      border: 1px solid #242424;
-      border-radius: 4px;
-      margin-bottom: 8px;
-      font-family: monospace;
-      font-size: 12px;
-      cursor: pointer;
-    }
-    .signal-check input {
-      accent-color: var(--gold);
-      cursor: pointer;
-    }
-    .sim-output {
-      background: #0A0A0A;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-    }
-    .sim-gauge {
-      font-size: 64px;
-      font-weight: 900;
-      font-family: monospace;
-      margin: 10px 0;
-    }
-    .sim-verdict {
-      font-family: monospace;
-      font-size: 13px;
-      font-weight: bold;
-      padding: 6px 14px;
-      border-radius: 4px;
-      margin-top: 10px;
-    }
-    .features-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 20px;
-    }
-    .feature-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 24px;
-    }
-    .feature-icon {
-      font-size: 24px;
-      margin-bottom: 16px;
-      color: var(--gold);
-    }
-    .feature-title {
-      font-size: 16px;
-      font-weight: 700;
-      margin-bottom: 8px;
-    }
-    .feature-desc {
-      font-size: 13px;
-      color: var(--muted);
-      line-height: 1.5;
-    }
-    footer {
-      border-top: 1px solid var(--border);
-      padding: 40px 24px;
-      text-align: center;
-      font-family: monospace;
-      font-size: 12px;
-      color: var(--muted);
-      margin-top: 100px;
-    }
-  </style>
-</head>
-<body>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>ClickShield</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: dark obsidian page, gold light. Split hero with the live 3D crest on the right, then
+     problem, attack anatomy, signals, an interactive risk engine, alert preview, stack, team. */
+  :root {
+    color-scheme: dark;
+    --ink: #050504;
+    --ink-2: #0b0a07;
+    --panel: #100e09;
+    --panel-2: #17130b;
+    --line: rgba(224, 169, 59, 0.30);
+    --line-soft: rgba(224, 169, 59, 0.14);
+    --gold: #e0a93b;
+    --gold-hi: #f4ce78;
+    --cream: #faf3e6;
+    --muted: #b4a98f;
+    --dim: #8a8068;
+    --danger: #ff5252;
+    --orange: #ff8a3d;
+    --amber: #ffd24a;
+    --ok: #3ddc97;
+    --font-display: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+    --font-body: 'Instrument Sans', 'Segoe UI', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 72px; }
+  body {
+    margin: 0;
+    background: var(--ink);
+    color: var(--cream);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  body::before {
+    content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px);
+    z-index: 30; background: var(--ink);
+  }
+  a { color: inherit; }
+  h1, h2, h3, p { margin: 0; }
+  h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; }
+  :focus-visible { outline: 2px solid var(--gold-hi); outline-offset: 3px; border-radius: 4px; }
 
-  <header>
-    <a href="#" class="brand">
-      <div class="brand-icon">🛡️</div>
-      <span class="brand-name">ClickShield</span>
+  .wrap {
+    width: 100%; max-width: 1180px; margin-inline: auto;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  .gold { color: var(--gold); }
+  .eyebrow {
+    font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--gold); margin-bottom: 14px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .eyebrow::before { content: ""; width: 26px; height: 1px; background: var(--gold); }
+  .section { padding-block: 84px; border-top: 1px solid var(--line-soft); }
+  .section h2 { font-size: clamp(2rem, 4.6vw, 3.1rem); line-height: 1.05; font-weight: 700; letter-spacing: -0.015em; }
+  .lead { color: var(--muted); font-size: 1.1rem; max-width: 62ch; margin-top: 18px; }
+
+  /* Nav */
+  .nav {
+    position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20;
+    background: rgba(5, 5, 4, 0.88); backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .nav .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 12px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; text-decoration: none; }
+  .brand svg { width: 24px; height: 28px; flex: none; }
+  .nav-links { display: flex; align-items: center; gap: 22px; font-size: 0.92rem; color: var(--muted); }
+  .nav-links a { text-decoration: none; }
+  .nav-links a:hover { color: var(--gold-hi); }
+  @media (max-width: 760px) { .nav-links .hide-sm { display: none; } }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    font: 600 0.95rem var(--font-body); text-decoration: none; cursor: pointer;
+    padding: 12px 20px; border-radius: 10px; border: 1px solid var(--gold);
+    background: var(--gold); color: #1a1204; transition: background 0.15s, transform 0.15s;
+  }
+  .btn:hover { background: var(--gold-hi); transform: translateY(-1px); }
+  .btn.ghost { background: transparent; color: var(--gold-hi); }
+  .btn.ghost:hover { background: rgba(224, 169, 59, 0.12); }
+  .btn.small { padding: 8px 14px; font-size: 0.85rem; }
+
+  /* Hero */
+  .hero { position: relative; overflow: hidden; }
+  .hero::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background:
+      radial-gradient(60% 70% at 78% 45%, rgba(224, 169, 59, 0.16), transparent 70%),
+      linear-gradient(115deg, transparent 58%, rgba(224, 169, 59, 0.05) 58.2%, transparent 72%),
+      linear-gradient(115deg, transparent 74%, rgba(224, 169, 59, 0.06) 74.2%, transparent 86%);
+  }
+  .hero .wrap {
+    position: relative; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    gap: 16px; align-items: center; padding-block: 40px 32px;
+  }
+  .hero h1 { font-size: clamp(3.4rem, 9.5vw, 6.4rem); line-height: 0.92; font-weight: 800; letter-spacing: -0.03em; }
+  .hero h1 .gold { color: var(--gold); }
+  .hero .tag { font-family: var(--font-display); font-size: clamp(1.5rem, 3vw, 2.1rem); font-weight: 600; line-height: 1.15; margin-top: 22px; }
+  .hero .sub { color: var(--muted); font-size: 1.1rem; max-width: 50ch; margin-top: 16px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px;
+    border: 1px solid var(--line); border-radius: 999px; font-size: 0.9rem; color: var(--gold-hi);
+    background: rgba(224, 169, 59, 0.06);
+  }
+  .chip i { width: 8px; height: 8px; border-radius: 50%; background: var(--gold); display: inline-block; }
+  .cta-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+  .by { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dim); margin-top: 30px; }
+  .by b { color: var(--gold-hi); font-weight: 500; }
+
+  .stage {
+    position: relative; height: clamp(340px, 64vh, 620px); cursor: grab; touch-action: pan-y;
+    -webkit-mask-image: radial-gradient(ellipse 72% 72% at 50% 50%, #000 58%, transparent 100%);
+    mask-image: radial-gradient(ellipse 72% 72% at 50% 50%, #000 58%, transparent 100%);
+  }
+  .stage:active { cursor: grabbing; }
+  .stage canvas { display: block; width: 100%; height: 100%; outline: none; }
+  .stage-fallback { position: absolute; inset: 0; display: none; place-items: center; }
+  .stage.no-webgl .stage-fallback { display: grid; }
+  .stage-fallback svg { width: min(60%, 260px); height: auto; filter: drop-shadow(0 0 30px rgba(224, 169, 59, 0.5)); }
+  .stage-hint {
+    position: absolute; left: 0; right: 0; bottom: 6px; text-align: center;
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim);
+    pointer-events: none;
+  }
+  @media (max-width: 860px) {
+    .hero .wrap { grid-template-columns: minmax(0, 1fr); padding-block: 32px 16px; }
+    .stage { height: 360px; }
+  }
+
+  /* Problem */
+  .split { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); gap: 48px; align-items: center; margin-top: 8px; }
+  @media (max-width: 860px) { .split { grid-template-columns: minmax(0, 1fr); gap: 32px; } }
+  .core-q {
+    margin-top: 28px; padding: 18px 20px; border: 1px solid var(--line); border-radius: 14px;
+    background: var(--panel); display: flex; gap: 16px; align-items: flex-start;
+  }
+  .core-q .qm {
+    flex: none; width: 36px; height: 36px; border-radius: 50%; background: var(--gold); color: #1a1204;
+    display: grid; place-items: center; font: 800 1.1rem var(--font-display);
+  }
+  .core-q small { display: block; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); margin-bottom: 4px; }
+  .core-q p { font-size: 1.08rem; }
+  .mock-wrap { position: relative; padding: 28px 20px 20px; border: 1px solid var(--line); border-radius: 18px; background: linear-gradient(160deg, var(--panel-2), var(--ink-2)); }
+  .mock-bar { display: flex; gap: 7px; margin-bottom: 22px; }
+  .mock-bar span { width: 10px; height: 10px; border-radius: 50%; background: var(--gold); opacity: 0.8; }
+  .mock-bar span:nth-child(2) { opacity: 0.55; } .mock-bar span:nth-child(3) { opacity: 0.3; }
+  .fake-captcha {
+    display: flex; align-items: center; gap: 14px; padding: 18px 20px; border-radius: 10px;
+    background: #fff4dd; color: #1b1405; font: 700 1.15rem var(--font-body); box-shadow: 0 10px 40px rgba(224, 169, 59, 0.25);
+  }
+  .fake-captcha .box { width: 26px; height: 26px; border: 2px solid #e0a93b; border-radius: 4px; background: #fffaf0; flex: none; }
+  .mock-cap { margin-top: 16px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--dim); }
+
+  /* Attack anatomy */
+  .steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 40px; margin-top: 44px; counter-reset: s; }
+  .step {
+    position: relative; padding: 24px; border: 1px solid var(--line); border-radius: 16px;
+    background: linear-gradient(170deg, var(--panel-2), var(--panel));
+  }
+  .step:not(:last-child)::after {
+    content: "\2192"; position: absolute; right: -32px; top: 50%; transform: translateY(-50%);
+    color: var(--gold); font-size: 1.6rem;
+  }
+  .step .n { font-family: var(--font-mono); font-size: 13px; color: var(--gold); letter-spacing: 0.12em; }
+  .step h3 { font-size: 1.5rem; margin: 6px 0 14px; }
+  .step .ico { width: 54px; height: 54px; border-radius: 12px; background: rgba(224, 169, 59, 0.1); display: grid; place-items: center; margin-bottom: 16px; color: var(--gold-hi); }
+  .step .ico svg { width: 28px; height: 28px; }
+  .step .ico .term { font: 700 1.2rem var(--font-mono); }
+  .step p { color: var(--muted); }
+  @media (max-width: 860px) {
+    .steps { grid-template-columns: minmax(0, 1fr); gap: 36px; }
+    .step:not(:last-child)::after { content: "\2193"; right: auto; left: 50%; top: auto; bottom: -34px; transform: translateX(-50%); }
+  }
+
+  /* Danger list */
+  .danger { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px 40px; margin-top: 40px; }
+  @media (max-width: 760px) { .danger { grid-template-columns: minmax(0, 1fr); } }
+  .danger-item { padding: 20px 22px; border-left: 2px solid var(--gold); background: linear-gradient(90deg, rgba(224, 169, 59, 0.08), transparent); }
+  .danger-item h3 { font-size: 1.25rem; }
+  .danger-item p { color: var(--muted); margin-top: 4px; }
+
+  /* Why fails */
+  .fail-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-top: 40px; }
+  @media (max-width: 960px) { .fail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 520px) { .fail-grid { grid-template-columns: minmax(0, 1fr); } }
+  .card { padding: 22px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); min-width: 0; }
+  .card h3 { font-size: 1.15rem; }
+  .card p { color: var(--muted); margin-top: 8px; font-size: 0.97rem; }
+  .approach {
+    margin-top: 16px; padding: 22px 26px; border: 1px solid var(--gold); border-radius: 14px;
+    background: linear-gradient(90deg, rgba(224, 169, 59, 0.14), rgba(224, 169, 59, 0.03));
+    display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: baseline;
+  }
+  .approach h3 { font-size: 1.3rem; color: var(--gold-hi); }
+  .approach p { color: var(--cream); }
+
+  /* Signals */
+  .sig-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-top: 40px; }
+  @media (max-width: 1000px) { .sig-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 520px) { .sig-grid { grid-template-columns: minmax(0, 1fr); } }
+  .sig-card { padding: 20px; border: 1px solid var(--line-soft); border-radius: 14px; background: var(--panel); transition: border-color 0.15s, background 0.15s; }
+  .sig-card:hover { border-color: var(--line); background: var(--panel-2); }
+  .sig-card .k { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); }
+  .sig-card h3 { font-size: 1.12rem; margin: 8px 0 6px; }
+  .sig-card p { color: var(--muted); font-size: 0.95rem; }
+
+  /* Risk engine */
+  .risk { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); gap: 24px; margin-top: 40px; align-items: start; }
+  @media (max-width: 900px) { .risk { grid-template-columns: minmax(0, 1fr); } }
+  .sig-list { margin: 0; padding: 0; border: 1px solid var(--line); border-radius: 16px; background: var(--panel); overflow: hidden; }
+  .sig-list legend { padding: 0; }
+  .sig-head { display: flex; justify-content: space-between; padding: 14px 22px; background: var(--panel-2); border-bottom: 1px solid var(--line); font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); }
+  .sig { display: flex; align-items: center; gap: 14px; padding: 15px 22px; border-bottom: 1px solid var(--line-soft); cursor: pointer; }
+  .sig:last-of-type { border-bottom: 0; }
+  .sig:hover { background: rgba(224, 169, 59, 0.05); }
+  .sig input { appearance: none; -webkit-appearance: none; width: 22px; height: 22px; border: 2px solid var(--gold); border-radius: 5px; background: transparent; flex: none; margin: 0; display: grid; place-items: center; cursor: pointer; }
+  .sig input:checked { background: var(--gold); }
+  .sig input:checked::after { content: ""; width: 6px; height: 11px; border: solid #1a1204; border-width: 0 2.5px 2.5px 0; transform: rotate(45deg) translate(-1px, -1px); }
+  .sig .name { flex: 1; min-width: 0; }
+  .sig .w { font-family: var(--font-mono); color: var(--gold-hi); font-variant-numeric: tabular-nums; }
+  .meter { padding: 26px; border: 1px solid var(--line); border-radius: 16px; background: linear-gradient(170deg, var(--panel-2), var(--panel)); position: sticky; top: 84px; }
+  @media (max-width: 900px) { .meter { position: static; } }
+  .meter .lab { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--dim); }
+  .score { display: flex; align-items: baseline; gap: 8px; margin-top: 6px; }
+  .score output { font: 800 4.4rem/1 var(--font-display); font-variant-numeric: tabular-nums; }
+  .score span { color: var(--dim); font-size: 1.1rem; }
+  .verdict { margin-top: 6px; font: 700 1.5rem var(--font-display); }
+  .bar { position: relative; margin-top: 22px; height: 12px; display: flex; gap: 3px; }
+  .bar i { display: block; height: 100%; border-radius: 3px; opacity: 0.35; }
+  .bar i:nth-child(1) { flex: 30; background: var(--ok); }
+  .bar i:nth-child(2) { flex: 30; background: var(--amber); }
+  .bar i:nth-child(3) { flex: 20; background: var(--orange); }
+  .bar i:nth-child(4) { flex: 20; background: var(--danger); }
+  .marker { position: absolute; top: -6px; width: 4px; height: 24px; background: var(--cream); border-radius: 2px; transform: translateX(-2px); transition: left 0.25s; box-shadow: 0 0 10px rgba(250, 243, 230, 0.7); }
+  .bands { list-style: none; margin: 22px 0 0; padding: 0; display: grid; gap: 8px; }
+  .bands li { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border: 1px solid var(--line-soft); border-radius: 8px; color: var(--muted); font-size: 0.95rem; }
+  .bands li b { font-family: var(--font-mono); font-weight: 500; margin-left: auto; font-variant-numeric: tabular-nums; }
+  .bands li::before { content: ""; width: 10px; height: 10px; border-radius: 2px; background: var(--c); }
+  .bands li[data-b="low"] { --c: var(--ok); } .bands li[data-b="sus"] { --c: var(--amber); }
+  .bands li[data-b="high"] { --c: var(--orange); } .bands li[data-b="strong"] { --c: var(--danger); }
+  .meter[data-band="low"] .verdict, .meter[data-band="low"] output { color: var(--ok); }
+  .meter[data-band="sus"] .verdict, .meter[data-band="sus"] output { color: var(--amber); }
+  .meter[data-band="high"] .verdict, .meter[data-band="high"] output { color: var(--orange); }
+  .meter[data-band="strong"] .verdict, .meter[data-band="strong"] output { color: var(--danger); }
+  .meter[data-band="low"] .bands li[data-b="low"],
+  .meter[data-band="sus"] .bands li[data-b="sus"],
+  .meter[data-band="high"] .bands li[data-b="high"],
+  .meter[data-band="strong"] .bands li[data-b="strong"] { border-color: var(--c); color: var(--cream); background: rgba(255, 255, 255, 0.04); }
+  .meter-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 18px; color: var(--dim); font-size: 0.88rem; }
+
+  /* Alert */
+  .alert-wrap { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); gap: 28px; margin-top: 40px; align-items: stretch; }
+  @media (max-width: 900px) { .alert-wrap { grid-template-columns: minmax(0, 1fr); } }
+  .win { border: 1px solid var(--line); border-radius: 18px; background: var(--panel); padding: 18px; }
+  .win .mock-bar { margin-bottom: 14px; }
+  .alert { border: 1px solid rgba(255, 82, 82, 0.6); border-radius: 12px; padding: 18px; background: linear-gradient(170deg, rgba(255, 82, 82, 0.14), rgba(255, 82, 82, 0.03)); }
+  .alert h3 { color: var(--danger); font: 800 1.05rem var(--font-display); letter-spacing: 0.04em; text-transform: uppercase; display: flex; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid rgba(255, 82, 82, 0.4); border-radius: 8px; background: rgba(255, 82, 82, 0.08); }
+  .alert ul { list-style: none; margin: 16px 0; padding: 0; display: grid; gap: 9px; }
+  .alert li { display: flex; gap: 10px; align-items: center; }
+  .alert li::before { content: ""; flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 10px rgba(224, 169, 59, 0.7); }
+  .alert-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+  .btn.danger { background: var(--danger); border-color: var(--danger); color: #fff; }
+  .btn.danger:hover { background: #ff7070; }
+  .detail { margin-top: 14px; padding: 12px 14px; border: 1px dashed var(--line); border-radius: 8px; color: var(--muted); font-size: 0.93rem; }
+  .status { margin-top: 12px; min-height: 1.4em; color: var(--gold-hi); font-size: 0.92rem; }
+  .actions { border: 1px solid var(--line); border-radius: 18px; padding: 26px; background: linear-gradient(170deg, var(--panel-2), var(--panel)); }
+  .actions h3 { font-size: 1.4rem; color: var(--gold-hi); display: flex; align-items: center; gap: 10px; }
+  .actions ol { margin: 18px 0 0; padding: 0; list-style: none; display: grid; gap: 14px; counter-reset: a; }
+  .actions li { counter-increment: a; display: flex; gap: 14px; align-items: flex-start; }
+  .actions li::before { content: counter(a); flex: none; width: 28px; height: 28px; border-radius: 8px; background: rgba(224, 169, 59, 0.14); color: var(--gold-hi); display: grid; place-items: center; font: 500 0.85rem var(--font-mono); }
+
+  /* Stack */
+  .flow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; margin-top: 40px; counter-reset: f; }
+  @media (max-width: 960px) { .flow { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 520px) { .flow { grid-template-columns: minmax(0, 1fr); } }
+  .flow .card { counter-increment: f; }
+  .flow .card::before { content: counter(f, decimal-leading-zero); display: block; font: 500 12px var(--font-mono); letter-spacing: 0.14em; color: var(--gold); margin-bottom: 10px; }
+  .stack { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 28px; }
+  @media (max-width: 960px) { .stack { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 520px) { .stack { grid-template-columns: minmax(0, 1fr); } }
+  .tech { padding: 16px 18px; border: 1px solid var(--line-soft); border-radius: 12px; background: var(--panel); font-weight: 500; }
+  .tech small { display: block; margin-top: 4px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dim); }
+
+  /* Impact */
+  .impact { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; margin-top: 40px; }
+  @media (max-width: 860px) { .impact { grid-template-columns: minmax(0, 1fr); } }
+  .impact-list { display: grid; gap: 14px; }
+  .impact-list .card { display: flex; gap: 14px; align-items: flex-start; }
+  .impact-list .card::before { content: ""; flex: none; width: 10px; height: 10px; margin-top: 8px; border-radius: 50%; background: var(--gold); }
+  .impact-list h3 { font-size: 1.1rem; }
+  .impact-list p { margin-top: 2px; }
+  .future { padding: 26px; border: 1px solid var(--line); border-radius: 18px; background: linear-gradient(170deg, var(--panel-2), var(--panel)); }
+  .future h3 { font-size: 1.4rem; color: var(--gold-hi); margin-bottom: 14px; }
+  .future ul { list-style: none; margin: 0; padding: 0; }
+  .future li { padding: 11px 0; border-bottom: 1px solid var(--line-soft); display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+  .future li:last-child { border-bottom: 0; }
+  .opt { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--dim); }
+
+  /* Team */
+  .team { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-top: 36px; }
+  @media (max-width: 760px) { .team { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .person { padding: 22px 18px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); text-align: center; font-weight: 500; }
+  .person::after { content: ""; display: block; width: 26px; height: 2px; margin: 12px auto 0; background: var(--gold); }
+  footer { border-top: 1px solid var(--line-soft); padding-block: 32px; color: var(--dim); font-size: 0.9rem; }
+  footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px 24px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .btn, .sig-card, .marker { transition: none; }
+  }
+</style>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="ClickShield home">
+      <svg viewBox="0 0 24 28" fill="none" aria-hidden="true"><path d="M12 1.5 22 5v8.2c0 6-4.2 10.6-10 13.3C6.2 23.800 2 19.200 2 13.200V5l10-3.500Z" stroke="#e0a93b" stroke-width="2" fill="rgba(224,169,59,.14)"/><path d="m7.500 13.500 3.200 3.200 6-6.200" stroke="#f4ce78" stroke-width="2.200" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Click<span class="gold">Shield</span>
     </a>
-    <nav>
-      <a href="#simulator">Risk Simulator</a>
-      <a href="#architecture">Architecture</a>
-      <a href="#demo">Live Demo</a>
-      <a href="https://github.com/Akarshb23/ClickShield" target="_blank">GitHub</a>
-      <a href="/tests/fixtures/index.html" class="btn-gold">Launch Demo</a>
+    <nav class="nav-links" aria-label="Sections">
+      <a class="hide-sm" href="#problem">Problem</a>
+      <a class="hide-sm" href="#signals">Signals</a>
+      <a class="hide-sm" href="#risk">Risk engine</a>
+      <a class="hide-sm" href="#stack">How it works</a>
+      <a class="hide-sm" href="https://github.com/Akarshb23/ClickShield" target="_blank">GitHub</a>
+      <a class="btn small" href="/tests/fixtures/index.html">Live Test Hub</a>
     </nav>
-  </header>
+  </div>
+</header>
 
-  <main>
-    <section class="hero">
-      <div class="tag">Local-First Behavioral Browser Defense</div>
-      <h1><span>Defend Against ClickFix Attacks</span><br />Before You Execute.</h1>
-      <p class="hero-desc">
-        ClickShield analyzes what a website is trying to coerce you into doing. It detects fake CAPTCHAs, clipboard hijacking, and PowerShell command execution instructions before dangerous payloads reach your terminal.
-      </p>
-      <div class="hero-actions">
-        <a href="https://github.com/Akarshb23/ClickShield" target="_blank" class="btn-gold">View on GitHub</a>
-        <a href="/tests/fixtures/index.html" class="btn-secondary">Test Live Scenarios →</a>
-      </div>
-    </section>
-
-    <section id="simulator" class="section">
-      <div class="section-title">
-        <h2>Interactive Threat Scoring Simulator</h2>
-        <p>Test ClickShield's multi-vector weighted scoring model in real time.</p>
-      </div>
-
-      <div class="sim-container">
-        <div class="sim-signals">
-          <h3>Detected Threat Signals</h3>
-
-          <label class="signal-check">
-            <span>Fake CAPTCHA / Deceptive Checkbox (+20)</span>
-            <input type="checkbox" id="sig-captcha" onchange="calculateSimRisk()" checked />
-          </label>
-
-          <label class="signal-check">
-            <span>Win + R / Run Dialog Instructions (+15)</span>
-            <input type="checkbox" id="sig-instruction" onchange="calculateSimRisk()" checked />
-          </label>
-
-          <label class="signal-check">
-            <span>Command Execution Cradle (irm | iex) (+25)</span>
-            <input type="checkbox" id="sig-cmd" onchange="calculateSimRisk()" checked />
-          </label>
-
-          <label class="signal-check">
-            <span>Programmatic Clipboard Write Hook (+25)</span>
-            <input type="checkbox" id="sig-clipboard" onchange="calculateSimRisk()" checked />
-          </label>
-
-          <label class="signal-check">
-            <span>Cloudflare / Microsoft Brand Impersonation (+15)</span>
-            <input type="checkbox" id="sig-impersonate" onchange="calculateSimRisk()" />
-          </label>
-
-          <label class="signal-check">
-            <span>High-Abuse Top Level Domain (.xyz, .top) (+10)</span>
-            <input type="checkbox" id="sig-tld" onchange="calculateSimRisk()" />
-          </label>
+<main id="top">
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <h1>Click<span class="gold">Shield</span></h1>
+        <p class="tag">Stopping ClickFix attacks before execution.</p>
+        <p class="sub">A behavioral extension layer that detects fake CAPTCHAs and OS command manipulation in real time.</p>
+        <div class="chips">
+          <span class="chip"><i></i>36-hour hackathon concept</span>
+          <span class="chip"><i></i>Chrome extension MV3</span>
         </div>
-
-        <div class="sim-output">
-          <div style="font-family: monospace; font-size: 12px; color: #888;">CALCULATED THREAT SCORE</div>
-          <div id="sim-score" class="sim-gauge" style="color: #DC2626;">85</div>
-          <div style="font-family: monospace; font-size: 11px; color: #555;">MAX CAPPED AT 100</div>
-
-          <div id="sim-badge" class="sim-verdict" style="background: rgba(220, 38, 38, 0.2); color: #F87171; border: 1px solid rgba(220, 38, 38, 0.4);">
-            CRITICAL THREAT &middot; SHADOW DOM INTERVENTION
-          </div>
-
-          <p id="sim-action" style="font-size: 12px; color: #aaa; margin-top: 16px; max-width: 300px;">
-            Active ClickFix vector confirmed. Dangerous terminal paste prevented and safe departure offered.
-          </p>
+        <div class="cta-row">
+          <a class="btn" href="#risk">Try the risk scorer</a>
+          <a class="btn ghost" href="/tests/fixtures/index.html">Live Extension Demo &rarr;</a>
+          <a class="btn ghost" href="#problem">What is ClickFix?</a>
         </div>
-      </div>
-    </section>
-
-    <section id="features" class="section">
-      <div class="section-title">
-        <h2>Core Defense Modules</h2>
-        <p>Built from scratch on Chrome Extension Manifest V3.</p>
+        <p class="by">Team <b>Out of Bounds</b> &middot; BuildX</p>
       </div>
 
-      <div class="features-grid">
-        <div class="feature-card">
-          <div class="feature-icon">🔍</div>
-          <div class="feature-title">Intent-Based Heuristics</div>
-          <div class="feature-desc">
-            Rather than relying solely on blocklists, ClickShield evaluates instructional sequences directed at users.
+      <div class="stage" id="stage" role="img" aria-label="Animated 3D ClickShield crest in front of layered browser windows. Drag to rotate.">
+        <div class="stage-fallback" aria-hidden="true">
+          <svg viewBox="0 0 24 28" fill="none"><path d="M12 1.5 22 5v8.2c0 6-4.2 10.6-10 13.3C6.2 23.800 2 19.200 2 13.200V5l10-3.500Z" stroke="#e0a93b" stroke-width="1.400" fill="rgba(224,169,59,.14)"/><path d="m7.500 13.500 3.200 3.200 6-6.200" stroke="#f4ce78" stroke-width="1.800" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="stage-hint">Drag to inspect</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="problem">
+    <div class="wrap">
+      <div class="eyebrow">The problem</div>
+      <h2>What is <span class="gold">ClickFix?</span></h2>
+      <div class="split">
+        <div>
+          <p class="lead" style="margin-top:0">A social-engineering technique that tricks users into performing dangerous actions by showing fake CAPTCHAs, browser verifications, updates or error prompts.</p>
+          <div class="core-q">
+            <div class="qm" aria-hidden="true">?</div>
+            <div><small>Core question</small><p>Is this webpage manipulating the user into performing a dangerous action?</p></div>
           </div>
         </div>
-
-        <div class="feature-card">
-          <div class="feature-icon">📋</div>
-          <div class="feature-title">Clipboard Protection</div>
-          <div class="feature-desc">
-            Monitors both user clicks and programmatic <code>navigator.clipboard.writeText</code> calls containing command syntax.
-          </div>
-        </div>
-
-        <div class="feature-card">
-          <div class="feature-icon">🛡️</div>
-          <div class="feature-title">Shadow DOM Overlays</div>
-          <div class="feature-desc">
-            Intervention modals inject inside a closed Shadow DOM, preventing host page CSS from tampering with security alerts.
-          </div>
-        </div>
-
-        <div class="feature-card">
-          <div class="feature-icon">⚡</div>
-          <div class="feature-title">Multi-Signal Correlation</div>
-          <div class="feature-desc">
-            Distinguishes between educational programming articles and coercive social engineering attacks.
-          </div>
-        </div>
-
-        <div class="feature-card">
-          <div class="feature-icon">🔒</div>
-          <div class="feature-title">100% Local-First</div>
-          <div class="feature-desc">
-            Zero cloud telemetry. Analysis, logs, and allowlists remain entirely inside the local Chrome storage sandbox.
-          </div>
-        </div>
-
-        <div class="feature-card">
-          <div class="feature-icon">📊</div>
-          <div class="feature-title">Command Dashboard</div>
-          <div class="feature-desc">
-            Full-tab security analytics suite featuring GSAP gauges, Recharts threat breakdowns, and JSON audit logging.
-          </div>
+        <div class="mock-wrap" aria-hidden="true">
+          <div class="mock-bar"><span></span><span></span><span></span></div>
+          <div class="fake-captcha"><span class="box"></span>I&rsquo;m not a robot</div>
+          <div class="mock-cap">Illustration of a fake verification prompt</div>
         </div>
       </div>
-    </section>
-  </main>
+    </div>
+  </section>
 
-  <footer>
-    <p>ClickShield &middot; Open-Source Behavioral Cybersecurity Extension &middot; MIT License</p>
-    <p><a href="https://github.com/Akarshb23/ClickShield" target="_blank" style="color: var(--gold); text-decoration: none;">GitHub Repository</a> &middot; <a href="/docs/PRIVACY_POLICY.md" style="color: #aaa; text-decoration: none;">Privacy Policy</a> &middot; <a href="/docs/TESTING.md" style="color: #aaa; text-decoration: none;">Testing Guide</a></p>
-  </footer>
+  <section class="section" id="anatomy">
+    <div class="wrap">
+      <div class="eyebrow">Anatomy of an attack</div>
+      <h2>How a ClickFix attack <span class="gold">works</span></h2>
+      <div class="steps">
+        <div class="step">
+          <div class="n">STEP 01</div>
+          <h3>Lure</h3>
+          <div class="ico"><svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="20" height="22" rx="3"/><path d="M9 10h10M9 15h10M9 20h5"/></svg></div>
+          <p>A fake CAPTCHA or verification page.</p>
+        </div>
+        <div class="step">
+          <div class="n">STEP 02</div>
+          <h3>Manipulation</h3>
+          <div class="ico"><svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="18" height="20" rx="3"/><path d="M10 5V3h8v2M10 13h8M10 18h8"/></svg></div>
+          <p>The user copies an encoded command to the clipboard.</p>
+        </div>
+        <div class="step">
+          <div class="n">STEP 03</div>
+          <h3>Execution</h3>
+          <div class="ico"><span class="term">&gt;_</span></div>
+          <p>The user runs the command manually, which bypasses filters.</p>
+        </div>
+      </div>
+    </div>
+  </section>
 
-  <script>
-    function calculateSimRisk() {
-      let score = 0;
-      if (document.getElementById("sig-captcha").checked) score += 20;
-      if (document.getElementById("sig-instruction").checked) score += 15;
-      if (document.getElementById("sig-cmd").checked) score += 25;
-      if (document.getElementById("sig-clipboard").checked) score += 25;
-      if (document.getElementById("sig-impersonate").checked) score += 15;
-      if (document.getElementById("sig-tld").checked) score += 10;
+  <section class="section">
+    <div class="wrap">
+      <div class="eyebrow">Real danger</div>
+      <h2>It&rsquo;s more than a <span class="gold">malicious URL</span></h2>
+      <div class="danger">
+        <div class="danger-item"><h3>Exploits user trust</h3><p>Looks familiar and legitimate.</p></div>
+        <div class="danger-item"><h3>Uses real user interaction</h3><p>Not a software vulnerability.</p></div>
+        <div class="danger-item"><h3>Can bypass traditional rules</h3><p>Evasions, native tools, manual execution.</p></div>
+        <div class="danger-item"><h3>It&rsquo;s a total system compromise</h3><p>Stealers, ransomware, persistent access.</p></div>
+      </div>
+    </div>
+  </section>
 
-      score = Math.min(score, 100);
-      document.getElementById("sim-score").textContent = score;
+  <section class="section" id="gap">
+    <div class="wrap">
+      <div class="eyebrow">Market gap</div>
+      <h2>Why traditional security <span class="gold">fails</span></h2>
+      <div class="fail-grid">
+        <div class="card"><h3>Legacy AV &amp; EDR</h3><p>Triggers late, after execution.</p></div>
+        <div class="card"><h3>Looks legitimate</h3><p>Resembles real verification flows.</p></div>
+        <div class="card"><h3>User participation</h3><p>Bypasses standard AI and heuristic filters.</p></div>
+        <div class="card"><h3>Evolving tactics</h3><p>New variants constantly appear.</p></div>
+      </div>
+      <div class="approach">
+        <h3>ClickShield approach</h3>
+        <p>Early intervention, behavioral signals and clear user guidance.</p>
+      </div>
+    </div>
+  </section>
 
-      const scoreEl = document.getElementById("sim-score");
-      const badgeEl = document.getElementById("sim-badge");
-      const actionEl = document.getElementById("sim-action");
+  <section class="section" id="signals">
+    <div class="wrap">
+      <div class="eyebrow">Detection layers</div>
+      <h2>Multiple signals. <span class="gold">Stronger detection.</span></h2>
+      <p class="lead">A Chrome extension that detects and stops ClickFix attacks in real time using behavioral analysis, page content inspection and explainable warnings. It stays lightweight and local.</p>
+      <div class="sig-grid">
+        <div class="sig-card"><div class="k">Page</div><h3>Page content analysis</h3><p>Detects deceptive language and patterns.</p></div>
+        <div class="sig-card"><div class="k">Visual</div><h3>CAPTCHA impersonation</h3><p>Identifies fake verification elements.</p></div>
+        <div class="sig-card"><div class="k">Command</div><h3>Dangerous instructions</h3><p>Flags malicious command patterns.</p></div>
+        <div class="sig-card"><div class="k">Clipboard</div><h3>Clipboard behavior</h3><p>Monitors suspicious copy actions.</p></div>
+        <div class="sig-card"><div class="k">Network</div><h3>URL and domain analysis</h3><p>Checks for suspicious domains and redirects.</p></div>
+        <div class="sig-card"><div class="k">Fusion</div><h3>Signal correlation</h3><p>Combines multiple indicators for accuracy.</p></div>
+        <div class="sig-card"><div class="k">Behavior</div><h3>User behavior analysis</h3><p>Identifies abnormal interaction patterns.</p></div>
+        <div class="sig-card"><div class="k">Verdict</div><h3>Real-time threat scoring</h3><p>Evaluates risk and blocks before execution.</p></div>
+      </div>
+    </div>
+  </section>
 
-      if (score >= 80) {
-        scoreEl.style.color = "#DC2626";
-        badgeEl.style.background = "rgba(220, 38, 38, 0.2)";
-        badgeEl.style.color = "#F87171";
-        badgeEl.style.borderColor = "rgba(220, 38, 38, 0.4)";
-        badgeEl.textContent = "CRITICAL THREAT · SHADOW DOM INTERVENTION";
-        actionEl.textContent = "Active ClickFix attack vector confirmed. Dangerous terminal paste prevented and safe departure offered.";
-      } else if (score >= 60) {
-        scoreEl.style.color = "#EA580C";
-        badgeEl.style.background = "rgba(234, 88, 12, 0.2)";
-        badgeEl.style.color = "#FB923C";
-        badgeEl.style.borderColor = "rgba(234, 88, 12, 0.4)";
-        badgeEl.textContent = "HIGH RISK · PROMINENT CAUTION";
-        actionEl.textContent = "Multiple threat indicators co-occur. Copy and paste behavior flagged for caution.";
-      } else if (score >= 30) {
-        scoreEl.style.color = "#D4A32C";
-        badgeEl.style.background = "rgba(212, 163, 44, 0.2)";
-        badgeEl.style.color = "#FDE047";
-        badgeEl.style.borderColor = "rgba(212, 163, 44, 0.4)";
-        badgeEl.textContent = "SUSPICIOUS · CONTEXTUAL ALERT";
-        actionEl.textContent = "Elevated suspicion. Passive monitoring active.";
-      } else {
-        scoreEl.style.color = "#16A34A";
-        badgeEl.style.background = "rgba(22, 163, 74, 0.2)";
-        badgeEl.style.color = "#4ADE80";
-        badgeEl.style.borderColor = "rgba(22, 163, 74, 0.4)";
-        badgeEl.textContent = "SECURE · PASSIVE MONITORING";
-        actionEl.textContent = "Typical page interactions. No deceptive patterns detected.";
-      }
+  <section class="section" id="risk">
+    <div class="wrap">
+      <div class="eyebrow">Risk engine</div>
+      <h2>From signals to a <span class="gold">clear verdict</span></h2>
+      <p class="lead">Each signal adds to a page&rsquo;s score. Tick the signals below to see how the verdict changes. Contributions are the example weights from the concept.</p>
+      <div class="risk">
+        <fieldset class="sig-list" id="sigs">
+          <legend class="sig-head" style="display:flex;width:100%"><span>Signal</span><span>Example contribution</span></legend>
+          <label class="sig"><input type="checkbox" data-w="20" id="s1" checked><span class="name">Fake CAPTCHA indicators</span><span class="w">+20</span></label>
+          <label class="sig"><input type="checkbox" data-w="15" id="s2"><span class="name">Suspicious instruction</span><span class="w">+15</span></label>
+          <label class="sig"><input type="checkbox" data-w="25" id="s3" checked><span class="name">Clipboard manipulation</span><span class="w">+25</span></label>
+          <label class="sig"><input type="checkbox" data-w="25" id="s4" checked><span class="name">Execution-oriented instruction</span><span class="w">+25</span></label>
+          <label class="sig"><input type="checkbox" data-w="10" id="s5"><span class="name">Suspicious domain / URL</span><span class="w">+10</span></label>
+          <label class="sig"><input type="checkbox" data-w="15" id="s6"><span class="name">Domain impersonation</span><span class="w">+15</span></label>
+        </fieldset>
+
+        <div class="meter" id="meter" data-band="high" aria-live="polite">
+          <div class="lab">Threat score</div>
+          <div class="score"><output id="score" for="sigs">70</output><span>/ 100</span></div>
+          <div class="verdict" id="verdict">High risk</div>
+          <div class="bar" aria-hidden="true"><i></i><i></i><i></i><i></i><span class="marker" id="marker" style="left:70%"></span></div>
+          <ul class="bands">
+            <li data-b="low">Low risk<b>0&ndash;29</b></li>
+            <li data-b="sus">Suspicious<b>30&ndash;59</b></li>
+            <li data-b="high">High risk<b>60&ndash;79</b></li>
+            <li data-b="strong">Strong ClickFix<b>80&ndash;100</b></li>
+          </ul>
+          <div class="meter-foot"><span>Scores cap at 100.</span><button class="btn ghost small" type="button" id="clear">Clear all</button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="alerts">
+    <div class="wrap">
+      <div class="eyebrow">In the browser</div>
+      <h2>Clear, <span class="gold">actionable alerts</span></h2>
+      <p class="lead">ClickShield shows real-time, easy-to-understand alerts with clear guidance, so users can take the right action immediately.</p>
+      <div class="alert-wrap">
+        <div class="win">
+          <div class="mock-bar" aria-hidden="true"><span></span><span></span><span></span></div>
+          <div class="alert">
+            <h3><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 21h20L12 3Z"/><path d="M12 10v5M12 18v.01" stroke-linecap="round"/></svg>High risk: possible ClickFix attack</h3>
+            <ul>
+              <li>Verification / CAPTCHA pattern detected</li>
+              <li>Suspicious domain or impersonation signal</li>
+              <li>Clipboard-related behavior</li>
+              <li>Execution-oriented instruction detected</li>
+              <li>Multiple signals correlate</li>
+            </ul>
+            <div class="alert-actions">
+              <button class="btn danger" type="button" id="leave">Leave this page</button>
+              <button class="btn ghost" type="button" id="details" aria-expanded="false" aria-controls="detail">View details</button>
+            </div>
+            <div class="detail" id="detail" hidden>Each signal adds to the page&rsquo;s score. When several line up, the verdict lands in the high-risk band and the warning appears before anything is run. Try it in the risk engine above.</div>
+            <div class="status" id="status" role="status"></div>
+          </div>
+        </div>
+        <div class="actions">
+          <h3>Recommended action</h3>
+          <ol>
+            <li>Do not copy, paste or execute instructions from this page.</li>
+            <li>Navigate directly to the trusted service instead.</li>
+            <li>Verify the website URL and look for signs of authenticity.</li>
+            <li>If in doubt, close the page and report it.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="stack">
+    <div class="wrap">
+      <div class="eyebrow">How it works</div>
+      <h2>How it works &amp; <span class="gold">what we use</span></h2>
+      <p class="lead">A lightweight Chrome extension that analyzes page content in real time, detects ClickFix attack patterns, and warns users before execution.</p>
+      <div class="flow">
+        <div class="card"><h3>Website visit</h3><p>User opens a web page.</p></div>
+        <div class="card"><h3>Page analysis</h3><p>Analyze content, instructions and behavior.</p></div>
+        <div class="card"><h3>Threat detection</h3><p>Identify ClickFix indicators using rules.</p></div>
+        <div class="card"><h3>Instant alert</h3><p>Show a clear, explainable warning.</p></div>
+        <div class="card"><h3>User stays safe</h3><p>Prevent execution of malicious commands.</p></div>
+      </div>
+      <div class="stack">
+        <div class="tech">Chrome Extension<small>Manifest V3</small></div>
+        <div class="tech">JavaScript / TypeScript</div>
+        <div class="tech">Rule engine<small>Heuristics</small></div>
+        <div class="tech">Page scanner</div>
+        <div class="tech">Chrome storage<small>Local</small></div>
+        <div class="tech">Notification API</div>
+        <div class="tech">Safe Browsing / threat intel<small>Optional</small></div>
+        <div class="tech">Analytics<small>Optional</small></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="impact">
+    <div class="wrap">
+      <div class="eyebrow">Impact &amp; future</div>
+      <h2>A safer internet, <span class="gold">one click at a time</span></h2>
+      <div class="impact">
+        <div class="impact-list">
+          <div class="card"><div><h3>Stops ClickFix attacks early</h3></div></div>
+          <div class="card"><div><h3>Explains risks in simple language</h3></div></div>
+          <div class="card"><div><h3>Lightweight and user-friendly</h3></div></div>
+          <div class="card"><div><h3>Works for individuals, enterprises and educational institutions</h3></div></div>
+        </div>
+        <div class="future">
+          <h3>Future enhancements</h3>
+          <ul>
+            <li>Community threat reports</li>
+            <li>More detection signals, such as AI-based analysis</li>
+            <li>Cloud intelligence <span class="opt">Optional</span></li>
+            <li>ML-based insights for zero-day patterns <span class="opt">Optional</span></li>
+            <li>Cross-browser support</li>
+            <li>Real-time URL reputation checks</li>
+            <li>Organization-wide dashboards for enterprise and education use</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>ClickShield &middot; PhishLens module &middot; Team Out of Bounds (BuildX)</span>
+    <span><a href="https://github.com/Akarshb23/ClickShield" target="_blank" style="color:var(--gold);text-decoration:none;">GitHub</a> &middot; <a href="/docs/PRIVACY_POLICY.md" style="color:var(--muted);text-decoration:none;">Privacy Policy</a> &middot; <a href="/docs/ARCHITECTURE.md" style="color:var(--muted);text-decoration:none;">Architecture</a></span>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.159.0/build/three.min.js"></script>
+<script>
+(function () {
+  /* ---------- Risk scorer ---------- */
+  var boxes = Array.prototype.slice.call(document.querySelectorAll('#sigs input'));
+  var meter = document.getElementById('meter');
+  var scoreEl = document.getElementById('score');
+  var verdictEl = document.getElementById('verdict');
+  var marker = document.getElementById('marker');
+  function updateScore() {
+    var s = 0;
+    boxes.forEach(function (b) { if (b.checked) s += Number(b.dataset.w); });
+    s = Math.min(100, s);
+    var band = s < 30 ? 'low' : s < 60 ? 'sus' : s < 80 ? 'high' : 'strong';
+    var label = { low: 'Low risk', sus: 'Suspicious', high: 'High risk', strong: 'Strong ClickFix' }[band];
+    scoreEl.textContent = s;
+    verdictEl.textContent = label;
+    meter.setAttribute('data-band', band);
+    marker.style.left = s + '%';
+  }
+  boxes.forEach(function (b) { b.addEventListener('change', updateScore); });
+  document.getElementById('clear').addEventListener('click', function () {
+    boxes.forEach(function (b) { b.checked = false; });
+    updateScore();
+  });
+  updateScore();
+
+  /* ---------- Alert demo ---------- */
+  var detailsBtn = document.getElementById('details');
+  var detail = document.getElementById('detail');
+  detailsBtn.addEventListener('click', function () {
+    var open = detail.hidden;
+    detail.hidden = !open;
+    detailsBtn.setAttribute('aria-expanded', String(open));
+    detailsBtn.textContent = open ? 'Hide details' : 'View details';
+  });
+  document.getElementById('leave').addEventListener('click', function () {
+    document.getElementById('status').textContent = 'Demo only. In the extension, this takes you off the page to a safe tab.';
+  });
+
+  /* ---------- 3D hero ---------- */
+  var stage = document.getElementById('stage');
+  try {
+    if (!window.THREE) throw new Error('three.js did not load');
+    initHero(stage);
+  } catch (err) {
+    stage.classList.add('no-webgl');
+  }
+
+  function initHero(host) {
+    var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    var renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+    renderer.setClearColor(0x000000, 0);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.18;
+    host.insertBefore(renderer.domElement, host.firstChild);
+
+    var scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x050504, 0.022);
+
+    var camera = new THREE.PerspectiveCamera(34, 1, 0.1, 120);
+    var cameraDirection = new THREE.Vector3(-0.42, 0.16, 0.893).normalize();
+    var cameraTarget = new THREE.Vector3(0.05, 0.0, 0.15);
+    var optimalCameraDistance = 12.2;
+
+    function computeOptimalDistance(aspect) {
+      var safeAspect = Math.max(aspect, 0.4);
+      var tanHalfFov = Math.tan(THREE.MathUtils.degToRad(camera.fov * 0.5));
+      var distV = (5.4 * 0.5) / tanHalfFov;
+      var distH = (6.2 * 0.5) / (tanHalfFov * safeAspect);
+      return Math.max(distV, distH) * 1.16;
     }
-  </script>
-</body>
-</html>
 
+    /* Warm studio reflection environment */
+    function createStudioEnvironment(glRenderer) {
+      var pmrem = new THREE.PMREMGenerator(glRenderer);
+      var envScene = new THREE.Scene();
+      envScene.background = new THREE.Color(0x080705);
+      var panelGeo = new THREE.PlaneGeometry(1, 1);
+      var warmGoldKey = new THREE.MeshBasicMaterial({ color: new THREE.Color(0xffe6b3).multiplyScalar(3.6), side: THREE.DoubleSide });
+      var amberRim = new THREE.MeshBasicMaterial({ color: new THREE.Color(0xffb84d).multiplyScalar(3.0), side: THREE.DoubleSide });
+      var softChampagne = new THREE.MeshBasicMaterial({ color: new THREE.Color(0xe6b860).multiplyScalar(2.2), side: THREE.DoubleSide });
+      var deepObsidian = new THREE.MeshBasicMaterial({ color: new THREE.Color(0x040302), side: THREE.DoubleSide });
+      var cards = [
+        { pos: [-6.5, 6.5, 7.5], scale: [8.0, 11.0, 1], mat: warmGoldKey },
+        { pos: [7.5, 4.5, -5.5], scale: [7.0, 12.0, 1], mat: amberRim },
+        { pos: [0.0, 9.5, 2.5], scale: [12.0, 4.5, 1], mat: warmGoldKey },
+        { pos: [-7.5, -2.0, -4.5], scale: [6.5, 10.0, 1], mat: softChampagne },
+        { pos: [2.5, -8.0, 5.5], scale: [10.0, 5.0, 1], mat: softChampagne },
+        { pos: [2.0, 0.5, 9.5], scale: [5.5, 8.5, 1], mat: deepObsidian },
+        { pos: [-8.5, 0.5, 3.0], scale: [5.0, 8.0, 1], mat: deepObsidian }
+      ];
+      cards.forEach(function (c) {
+        var mesh = new THREE.Mesh(panelGeo, c.mat);
+        mesh.position.set(c.pos[0], c.pos[1], c.pos[2]);
+        mesh.scale.set(c.scale[0], c.scale[1], c.scale[2]);
+        mesh.lookAt(0, 0, 0);
+        envScene.add(mesh);
+      });
+      var envRT = pmrem.fromScene(envScene, 0.032);
+      panelGeo.dispose(); warmGoldKey.dispose(); amberRim.dispose(); softChampagne.dispose(); deepObsidian.dispose();
+      pmrem.dispose();
+      return envRT.texture;
+    }
+    scene.environment = createStudioEnvironment(renderer);
+
+    /* Procedural textures */
+    function makeCanvas(w, h) { var c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
+    function createBrushedGoldTexture() {
+      var canvas = makeCanvas(256, 256), ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#808080'; ctx.fillRect(0, 0, 256, 256);
+      for (var y = 0; y < 256; y++) {
+        var shade = 116 + Math.floor(Math.random() * 24);
+        ctx.fillStyle = 'rgb(' + shade + ',' + shade + ',' + shade + ')';
+        ctx.fillRect(0, y, 256, 1);
+      }
+      for (var i = 0; i < 420; i++) {
+        var x = Math.random() * 256, yy = Math.random() * 256, w = 24 + Math.random() * 75;
+        var s = Math.random() > 0.5 ? 150 : 106;
+        ctx.fillStyle = 'rgba(' + s + ',' + s + ',' + s + ',0.20)';
+        ctx.fillRect(x, yy, w, 1);
+      }
+      var tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(2, 2);
+      return tex;
+    }
+    function createScanlineGlassTexture() {
+      var canvas = makeCanvas(256, 256), ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#7e7e7e'; ctx.fillRect(0, 0, 256, 256);
+      ctx.fillStyle = 'rgba(155,155,155,0.14)';
+      for (var y = 0; y < 256; y += 4) ctx.fillRect(0, y, 256, 1);
+      var tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(3, 3);
+      return tex;
+    }
+    function createGlowRadialTexture() {
+      var canvas = makeCanvas(128, 128), ctx = canvas.getContext('2d');
+      var grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+      grad.addColorStop(0.0, 'rgba(255,226,140,0.95)');
+      grad.addColorStop(0.32, 'rgba(255,196,82,0.42)');
+      grad.addColorStop(0.7, 'rgba(200,138,42,0.10)');
+      grad.addColorStop(1.0, 'rgba(200,138,42,0.0)');
+      ctx.fillStyle = grad; ctx.fillRect(0, 0, 128, 128);
+      return new THREE.CanvasTexture(canvas);
+    }
+    var brushedTex = createBrushedGoldTexture();
+    var glassScanTex = createScanlineGlassTexture();
+    var glowTex = createGlowRadialTexture();
+
+    var materials = {
+      obsidianArmor: new THREE.MeshPhysicalMaterial({ color: 0x15110b, metalness: 0.88, roughness: 0.28, roughnessMap: brushedTex, clearcoat: 0.35, clearcoatRoughness: 0.22, envMapIntensity: 1.4 }),
+      bronzeMetal: new THREE.MeshPhysicalMaterial({ color: 0x6b471d, metalness: 0.92, roughness: 0.25, roughnessMap: brushedTex, bumpMap: brushedTex, bumpScale: 0.004, envMapIntensity: 1.35 }),
+      antiqueGold: new THREE.MeshPhysicalMaterial({ color: 0xc2903c, metalness: 0.95, roughness: 0.20, roughnessMap: brushedTex, bumpMap: brushedTex, bumpScale: 0.003, clearcoat: 0.22, clearcoatRoughness: 0.20, envMapIntensity: 1.45 }),
+      brightGold: new THREE.MeshPhysicalMaterial({ color: 0xf4ce78, metalness: 0.98, roughness: 0.13, clearcoat: 0.28, clearcoatRoughness: 0.14, envMapIntensity: 1.55 }),
+      goldGlowRim: new THREE.MeshStandardMaterial({ color: 0xffda84, emissive: 0xffc452, emissiveIntensity: 1.35, roughness: 0.2, metalness: 0.35 }),
+      shieldCoreGlow: new THREE.MeshStandardMaterial({ color: 0xffe49e, emissive: 0xffc85a, emissiveIntensity: 1.65, roughness: 0.18, metalness: 0.2 }),
+      smokedAmberGlassFront: new THREE.MeshPhysicalMaterial({ color: 0x261a0a, metalness: 0.08, roughness: 0.16, roughnessMap: glassScanTex, transparent: true, opacity: 0.72, clearcoat: 0.65, clearcoatRoughness: 0.14, envMapIntensity: 1.35, depthWrite: false }),
+      smokedAmberGlassBack: new THREE.MeshPhysicalMaterial({ color: 0x1a1207, metalness: 0.08, roughness: 0.22, roughnessMap: glassScanTex, transparent: true, opacity: 0.56, clearcoat: 0.5, clearcoatRoughness: 0.2, envMapIntensity: 1.2, depthWrite: false }),
+      scanBeamMat: new THREE.MeshBasicMaterial({ color: 0xffcf6b, transparent: true, opacity: 0.38, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }),
+      uiTraceMat: new THREE.MeshBasicMaterial({ color: 0xe8b95c, transparent: true, opacity: 0.26, depthWrite: false })
+    };
+
+    /* Shape builders */
+    function createRoundedRectShape(width, height, radius) {
+      var hw = width * 0.5, hh = height * 0.5, r = Math.min(radius, hw * 0.9, hh * 0.9);
+      var shape = new THREE.Shape();
+      shape.moveTo(-hw + r, -hh);
+      shape.lineTo(hw - r, -hh);
+      shape.quadraticCurveTo(hw, -hh, hw, -hh + r);
+      shape.lineTo(hw, hh - r);
+      shape.quadraticCurveTo(hw, hh, hw - r, hh);
+      shape.lineTo(-hw + r, hh);
+      shape.quadraticCurveTo(-hw, hh, -hw, hh - r);
+      shape.lineTo(-hw, -hh + r);
+      shape.quadraticCurveTo(-hw, -hh, -hw + r, -hh);
+      shape.closePath();
+      return shape;
+    }
+    function createRoundedRectHole(width, height, radius) {
+      var hw = width * 0.5, hh = height * 0.5, r = Math.min(radius, hw * 0.9, hh * 0.9);
+      var hole = new THREE.Path();
+      hole.moveTo(-hw + r, -hh);
+      hole.quadraticCurveTo(-hw, -hh, -hw, -hh + r);
+      hole.lineTo(-hw, hh - r);
+      hole.quadraticCurveTo(-hw, hh, -hw + r, hh);
+      hole.lineTo(hw - r, hh);
+      hole.quadraticCurveTo(hw, hh, hw, hh - r);
+      hole.lineTo(hw, -hh + r);
+      hole.quadraticCurveTo(hw, -hh, hw - r, -hh);
+      hole.lineTo(-hw + r, -hh);
+      hole.closePath();
+      return hole;
+    }
+    function createShieldOuterShape(sx, sy) {
+      var s = new THREE.Shape();
+      s.moveTo(0, 1.34 * sy);
+      s.lineTo(1.04 * sx, 1.04 * sy);
+      s.lineTo(1.01 * sx, 0.22 * sy);
+      s.bezierCurveTo(0.96 * sx, -0.54 * sy, 0.46 * sx, -1.10 * sy, 0, -1.42 * sy);
+      s.bezierCurveTo(-0.46 * sx, -1.10 * sy, -0.96 * sx, -0.54 * sy, -1.01 * sx, 0.22 * sy);
+      s.lineTo(-1.04 * sx, 1.04 * sy);
+      s.lineTo(0, 1.34 * sy);
+      s.closePath();
+      return s;
+    }
+    function createShieldInnerHole(sx, sy) {
+      var h = new THREE.Path();
+      h.moveTo(0, 1.34 * sy);
+      h.lineTo(-1.04 * sx, 1.04 * sy);
+      h.lineTo(-1.01 * sx, 0.22 * sy);
+      h.bezierCurveTo(-0.96 * sx, -0.54 * sy, -0.46 * sx, -1.10 * sy, 0, -1.42 * sy);
+      h.bezierCurveTo(0.46 * sx, -1.10 * sy, 0.96 * sx, -0.54 * sy, 1.01 * sx, 0.22 * sy);
+      h.lineTo(1.04 * sx, 1.04 * sy);
+      h.lineTo(0, 1.34 * sy);
+      h.closePath();
+      return h;
+    }
+    function extrudeCentered(shape, options) {
+      var geom = new THREE.ExtrudeGeometry(shape, options);
+      geom.translate(0, 0, -(options.depth || 0) * 0.5);
+      geom.computeVertexNormals();
+      return geom;
+    }
+
+    /* Layered browser inspection windows */
+    var heroRoot = new THREE.Group();
+    heroRoot.rotation.set(0.04, 0.24, -0.02);
+    scene.add(heroRoot);
+
+    var browserLayers = [];
+    var layerConfigs = [
+      { z: -0.95, x: 0.62, y: 0.34, w: 3.35, h: 2.35, glassMat: materials.smokedAmberGlassBack, rimMat: materials.antiqueGold, isMiddle: false },
+      { z: -0.32, x: 0.26, y: 0.14, w: 3.55, h: 2.50, glassMat: materials.smokedAmberGlassBack, rimMat: materials.antiqueGold, isMiddle: true },
+      { z: 0.32, x: -0.10, y: -0.06, w: 3.75, h: 2.65, glassMat: materials.smokedAmberGlassFront, rimMat: materials.brightGold, isMiddle: false }
+    ];
+    var scannerBarMesh = null;
+
+    layerConfigs.forEach(function (cfg, idx) {
+      var layerGroup = new THREE.Group();
+      layerGroup.position.set(cfg.x, cfg.y, cfg.z);
+      heroRoot.add(layerGroup);
+      var borderThick = 0.065, cornerR = 0.18;
+
+      var outerFrameShape = createRoundedRectShape(cfg.w, cfg.h, cornerR);
+      outerFrameShape.holes.push(createRoundedRectHole(cfg.w - borderThick * 2, cfg.h - borderThick * 2, cornerR - 0.04));
+      layerGroup.add(new THREE.Mesh(extrudeCentered(outerFrameShape, { depth: 0.075, bevelEnabled: true, bevelThickness: 0.018, bevelSize: 0.016, bevelSegments: 3, curveSegments: 16 }), cfg.rimMat));
+
+      var glowFrameShape = createRoundedRectShape(cfg.w - borderThick * 1.75, cfg.h - borderThick * 1.75, cornerR - 0.03);
+      glowFrameShape.holes.push(createRoundedRectHole(cfg.w - borderThick * 2.35, cfg.h - borderThick * 2.35, cornerR - 0.05));
+      layerGroup.add(new THREE.Mesh(extrudeCentered(glowFrameShape, { depth: 0.035, bevelEnabled: false, curveSegments: 16 }), materials.goldGlowRim));
+
+      var glassShape = createRoundedRectShape(cfg.w - borderThick * 2.1, cfg.h - borderThick * 2.1, cornerR - 0.04);
+      var glassMesh = new THREE.Mesh(extrudeCentered(glassShape, { depth: 0.022, bevelEnabled: false, curveSegments: 16 }), cfg.glassMat);
+      glassMesh.renderOrder = idx + 1;
+      layerGroup.add(glassMesh);
+
+      var headerY = cfg.h * 0.5 - 0.30;
+      var divider = new THREE.Mesh(new THREE.BoxGeometry(cfg.w - borderThick * 2.2, 0.016, 0.032), materials.goldGlowRim);
+      divider.position.set(0, headerY, 0.01);
+      layerGroup.add(divider);
+
+      var dotGeom = new THREE.CylinderGeometry(0.038, 0.038, 0.042, 18);
+      dotGeom.rotateX(Math.PI * 0.5);
+      var dotStartX = -cfg.w * 0.5 + 0.24, dotY = cfg.h * 0.5 - 0.16;
+      for (var d = 0; d < 3; d++) {
+        var dot = new THREE.Mesh(dotGeom, materials.brightGold);
+        dot.position.set(dotStartX + d * 0.135, dotY, 0.018);
+        layerGroup.add(dot);
+      }
+
+      var urlBar = new THREE.Mesh(new THREE.BoxGeometry(cfg.w * 0.42, 0.055, 0.026), materials.bronzeMetal);
+      urlBar.position.set(0.18, dotY, 0.014);
+      layerGroup.add(urlBar);
+
+      if (idx < 2) {
+        [[-0.78, 0.28, 1.15, 0.34], [0.62, 0.28, 1.25, 0.34], [-0.45, -0.34, 1.80, 0.48], [0.86, -0.34, 0.76, 0.48]].forEach(function (b) {
+          var trace = new THREE.Mesh(new THREE.PlaneGeometry(b[2], b[3]), materials.uiTraceMat);
+          trace.position.set(b[0], b[1], 0.018);
+          layerGroup.add(trace);
+        });
+      }
+
+      if (cfg.isMiddle) {
+        scannerBarMesh = new THREE.Mesh(new THREE.PlaneGeometry(cfg.w - borderThick * 2.4, 0.075), materials.scanBeamMat);
+        scannerBarMesh.position.set(0, 0.2, 0.024);
+        scannerBarMesh.renderOrder = 4;
+        layerGroup.add(scannerBarMesh);
+      }
+
+      browserLayers.push({ group: layerGroup, basePos: new THREE.Vector3(cfg.x, cfg.y, cfg.z), phase: idx * 1.1 });
+    });
+
+    /* Shield crest */
+    var shieldAssembly = new THREE.Group();
+    shieldAssembly.position.set(-0.24, -0.10, 0.96);
+    heroRoot.add(shieldAssembly);
+
+    var standoffGeom = new THREE.CylinderGeometry(0.032, 0.032, 0.56, 12);
+    standoffGeom.rotateX(Math.PI * 0.5);
+    [[-0.48, 0.52, -0.32], [0.48, 0.52, -0.32], [0.0, -0.58, -0.32]].forEach(function (o) {
+      var pin = new THREE.Mesh(standoffGeom, materials.bronzeMetal);
+      pin.position.set(o[0], o[1], o[2]);
+      shieldAssembly.add(pin);
+    });
+
+    var shieldOuterShape = createShieldOuterShape(1.06, 1.06);
+    shieldOuterShape.holes.push(createShieldInnerHole(0.84, 0.85));
+    shieldAssembly.add(new THREE.Mesh(extrudeCentered(shieldOuterShape, { depth: 0.16, bevelEnabled: true, bevelThickness: 0.038, bevelSize: 0.034, bevelSegments: 4, curveSegments: 28 }), materials.brightGold));
+
+    var shieldMidShape = createShieldOuterShape(0.95, 0.96);
+    shieldMidShape.holes.push(createShieldInnerHole(0.82, 0.83));
+    var shieldMidMesh = new THREE.Mesh(extrudeCentered(shieldMidShape, { depth: 0.21, bevelEnabled: true, bevelThickness: 0.022, bevelSize: 0.020, bevelSegments: 3, curveSegments: 28 }), materials.antiqueGold);
+    shieldMidMesh.position.z = -0.01;
+    shieldAssembly.add(shieldMidMesh);
+
+    var shieldGlowShape = createShieldOuterShape(0.855, 0.865);
+    shieldGlowShape.holes.push(createShieldInnerHole(0.805, 0.815));
+    var shieldGlowMesh = new THREE.Mesh(extrudeCentered(shieldGlowShape, { depth: 0.15, bevelEnabled: false, curveSegments: 28 }), materials.shieldCoreGlow);
+    shieldGlowMesh.position.z = 0.015;
+    shieldAssembly.add(shieldGlowMesh);
+
+    var shieldCoreShape = createShieldOuterShape(0.81, 0.82);
+    var shieldCoreMesh = new THREE.Mesh(extrudeCentered(shieldCoreShape, { depth: 0.12, bevelEnabled: true, bevelThickness: 0.018, bevelSize: 0.016, bevelSegments: 3, curveSegments: 28 }), materials.obsidianArmor);
+    shieldCoreMesh.position.z = -0.01;
+    shieldAssembly.add(shieldCoreMesh);
+
+    var checkShape = new THREE.Shape();
+    checkShape.moveTo(-0.40, 0.02);
+    checkShape.lineTo(-0.27, 0.15);
+    checkShape.lineTo(-0.08, -0.04);
+    checkShape.lineTo(0.32, 0.36);
+    checkShape.lineTo(0.45, 0.23);
+    checkShape.lineTo(-0.08, -0.30);
+    checkShape.closePath();
+    var checkMesh = new THREE.Mesh(extrudeCentered(checkShape, { depth: 0.065, bevelEnabled: true, bevelThickness: 0.016, bevelSize: 0.014, bevelSegments: 3, curveSegments: 1 }), materials.brightGold);
+    checkMesh.position.set(0.0, 0.02, 0.095);
+    shieldAssembly.add(checkMesh);
+
+    var shieldHaloMat = new THREE.SpriteMaterial({ map: glowTex, color: 0xffc85a, transparent: true, opacity: 0.42, depthWrite: false, blending: THREE.AdditiveBlending });
+    var shieldHalo = new THREE.Sprite(shieldHaloMat);
+    shieldHalo.position.set(0, 0, -0.14);
+    shieldHalo.scale.set(3.4, 3.8, 1);
+    shieldAssembly.add(shieldHalo);
+
+    /* Floating detection tiles */
+    var tileConfigs = [
+      { pos: [2.25, 1.32, -0.55], size: 0.26, mat: materials.brightGold, phase: 0.2 },
+      { pos: [2.42, 0.62, -0.18], size: 0.18, mat: materials.antiqueGold, phase: 1.4 },
+      { pos: [1.98, -1.18, 0.25], size: 0.22, mat: materials.obsidianArmor, phase: 2.5 },
+      { pos: [-2.12, 1.12, 0.45], size: 0.20, mat: materials.antiqueGold, phase: 3.3 },
+      { pos: [-2.28, -0.88, -0.15], size: 0.25, mat: materials.bronzeMetal, phase: 4.1 },
+      { pos: [1.35, 1.72, -0.82], size: 0.16, mat: materials.brightGold, phase: 5.0 }
+    ];
+    var floatingTiles = [];
+    tileConfigs.forEach(function (tc) {
+      var tileGroup = new THREE.Group();
+      tileGroup.position.set(tc.pos[0], tc.pos[1], tc.pos[2]);
+      tileGroup.add(new THREE.Mesh(extrudeCentered(createRoundedRectShape(tc.size, tc.size, tc.size * 0.18), { depth: tc.size * 0.42, bevelEnabled: true, bevelThickness: 0.014, bevelSize: 0.012, bevelSegments: 2, curveSegments: 8 }), tc.mat));
+      var rimShape = createRoundedRectShape(tc.size * 1.08, tc.size * 1.08, tc.size * 0.2);
+      rimShape.holes.push(createRoundedRectHole(tc.size * 0.94, tc.size * 0.94, tc.size * 0.16));
+      tileGroup.add(new THREE.Mesh(extrudeCentered(rimShape, { depth: tc.size * 0.2, bevelEnabled: false, curveSegments: 8 }), materials.goldGlowRim));
+      heroRoot.add(tileGroup);
+      floatingTiles.push({ group: tileGroup, basePos: new THREE.Vector3(tc.pos[0], tc.pos[1], tc.pos[2]), phase: tc.phase });
+    });
+
+    /* Background circuit lines */
+    var circuitGrid = new THREE.Group();
+    circuitGrid.position.set(0.3, 0.0, -2.4);
+    var lineMat = new THREE.LineBasicMaterial({ color: 0xc2903c, transparent: true, opacity: 0.16 });
+    [
+      [[-4.5, 1.8, 0], [-2.2, 1.8, 0], [-1.6, 1.2, 0], [1.8, 1.2, 0], [2.4, 1.8, 0], [4.6, 1.8, 0]],
+      [[-4.2, -1.6, 0], [-1.9, -1.6, 0], [-1.3, -1.0, 0], [2.1, -1.0, 0], [2.7, -1.6, 0], [4.5, -1.6, 0]],
+      [[-3.6, 0.3, 0], [-2.4, 0.3, 0], [-2.0, -0.1, 0], [-0.8, -0.1, 0]],
+      [[1.4, 0.2, 0], [2.5, 0.2, 0], [2.9, 0.6, 0], [4.4, 0.6, 0]]
+    ].forEach(function (pts) {
+      var vecs = pts.map(function (p) { return new THREE.Vector3(p[0], p[1], p[2]); });
+      circuitGrid.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(vecs), lineMat));
+    });
+    heroRoot.add(circuitGrid);
+
+    /* Dust motes */
+    var moteCount = 60, motePositions = new Float32Array(moteCount * 3);
+    for (var i = 0; i < moteCount; i++) {
+      motePositions[i * 3] = (Math.random() - 0.5) * 8.5;
+      motePositions[i * 3 + 1] = (Math.random() - 0.5) * 5.6;
+      motePositions[i * 3 + 2] = (Math.random() - 0.5) * 4.2;
+    }
+    var moteGeom = new THREE.BufferGeometry();
+    moteGeom.setAttribute('position', new THREE.BufferAttribute(motePositions, 3));
+    var ambientMotes = new THREE.Points(moteGeom, new THREE.PointsMaterial({ size: 0.065, map: glowTex, transparent: true, opacity: 0.34, depthWrite: false, blending: THREE.AdditiveBlending }));
+    scene.add(ambientMotes);
+
+    /* Lighting */
+    scene.add(new THREE.HemisphereLight(0xffe9bf, 0x0a0805, 0.35));
+    var keyLight = new THREE.DirectionalLight(0xfff2d6, 2.5); keyLight.position.set(-5.5, 7.5, 8.5); scene.add(keyLight);
+    var warmRimLight = new THREE.DirectionalLight(0xffb84d, 2.3); warmRimLight.position.set(7.5, 5.0, -5.5); scene.add(warmRimLight);
+    var frontSpecLight = new THREE.DirectionalLight(0xf5cf78, 1.35); frontSpecLight.position.set(3.5, 2.5, 7.5); scene.add(frontSpecLight);
+    var shieldAccentLight = new THREE.PointLight(0xffc85a, 2.1, 8.0, 1.8); shieldAccentLight.position.set(-0.2, 0.0, 1.55); scene.add(shieldAccentLight);
+
+    /* Interaction: parallax follows the pointer, dragging the stage rotates the model.
+       No wheel handler, so the page keeps scrolling normally. */
+    var pointer = { normX: 0, normY: 0, isDragging: false, prevX: 0, prevY: 0, dragYaw: 0, dragPitch: 0 };
+    window.addEventListener('pointermove', function (e) {
+      pointer.normX = (e.clientX / Math.max(window.innerWidth, 1)) * 2 - 1;
+      pointer.normY = (e.clientY / Math.max(window.innerHeight, 1)) * 2 - 1;
+      if (pointer.isDragging) {
+        pointer.dragYaw += (e.clientX - pointer.prevX) * 0.0065;
+        pointer.dragPitch = THREE.MathUtils.clamp(pointer.dragPitch + (e.clientY - pointer.prevY) * 0.0045, -0.45, 0.45);
+        pointer.prevX = e.clientX; pointer.prevY = e.clientY;
+      }
+    });
+    host.addEventListener('pointerdown', function (e) { pointer.isDragging = true; pointer.prevX = e.clientX; pointer.prevY = e.clientY; });
+    window.addEventListener('pointerup', function () { pointer.isDragging = false; });
+    window.addEventListener('pointercancel', function () { pointer.isDragging = false; });
+
+    /* Sizing follows the stage element */
+    function updateViewport() {
+      var w = Math.max(host.clientWidth, 1), h = Math.max(host.clientHeight, 1);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      optimalCameraDistance = computeOptimalDistance(camera.aspect);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setSize(w, h, false);
+    }
+    updateViewport();
+    window.addEventListener('resize', updateViewport);
+    if (typeof ResizeObserver !== 'undefined') new ResizeObserver(updateViewport).observe(host);
+
+    var visible = true;
+    if (typeof IntersectionObserver !== 'undefined') {
+      new IntersectionObserver(function (entries) { visible = entries[0].isIntersecting; }).observe(host);
+    }
+
+    /* Animation loop */
+    var clock = new THREE.Clock();
+    var baseHeroRot = { x: 0.04, y: 0.24 };
+    var baseShieldPos = shieldAssembly.position.clone();
+    var smoothX = 0, smoothY = 0;
+
+    function animate() {
+      requestAnimationFrame(animate);
+      if (!visible || document.hidden) return;
+      var t = reduced ? 0 : clock.getElapsedTime();
+
+      smoothX += (pointer.normX - smoothX) * 0.05;
+      smoothY += (pointer.normY - smoothY) * 0.05;
+
+      camera.position.copy(cameraDirection).multiplyScalar(optimalCameraDistance);
+      camera.lookAt(cameraTarget);
+
+      var idleYaw = Math.sin(t * 0.42) * 0.11;
+      var idlePitch = Math.cos(t * 0.35) * 0.04;
+      var parallax = reduced ? 0 : 1;
+      var targetYaw = baseHeroRot.y + idleYaw + smoothX * 0.22 * parallax + pointer.dragYaw;
+      var targetPitch = baseHeroRot.x + idlePitch + smoothY * 0.12 * parallax + pointer.dragPitch;
+      heroRoot.rotation.y += (targetYaw - heroRoot.rotation.y) * 0.06;
+      heroRoot.rotation.x += (targetPitch - heroRoot.rotation.x) * 0.06;
+      heroRoot.position.y = Math.sin(t * 0.75) * 0.065;
+
+      for (var i = 0; i < browserLayers.length; i++) {
+        var layer = browserLayers[i];
+        layer.group.position.z = layer.basePos.z + Math.sin(t * 0.85 + layer.phase) * 0.032;
+        layer.group.position.y = layer.basePos.y + Math.cos(t * 0.75 + layer.phase) * 0.018;
+      }
+
+      shieldAssembly.position.z = baseShieldPos.z + Math.sin(t * 1.05 + 0.6) * 0.045;
+      shieldAssembly.position.y = baseShieldPos.y + Math.cos(t * 0.85) * 0.025;
+
+      if (scannerBarMesh) {
+        scannerBarMesh.position.y = Math.sin(t * 1.45) * 0.82;
+        scannerBarMesh.material.opacity = 0.24 + (0.5 + 0.5 * Math.cos(t * 2.9)) * 0.22;
+      }
+
+      for (var j = 0; j < floatingTiles.length; j++) {
+        var tile = floatingTiles[j];
+        tile.group.position.y = tile.basePos.y + Math.sin(t * 1.1 + tile.phase) * 0.06;
+        tile.group.position.x = tile.basePos.x + Math.cos(t * 0.8 + tile.phase) * 0.025;
+        tile.group.rotation.z = Math.sin(t * 0.7 + tile.phase) * 0.08;
+        tile.group.rotation.y = Math.cos(t * 0.6 + tile.phase) * 0.12;
+      }
+
+      var pulse = 0.5 + 0.5 * Math.sin(t * 2.0);
+      materials.shieldCoreGlow.emissiveIntensity = 1.35 + pulse * 0.55;
+      materials.goldGlowRim.emissiveIntensity = 1.05 + pulse * 0.35;
+      shieldHaloMat.opacity = 0.32 + pulse * 0.16;
+      shieldAccentLight.intensity = 1.85 + pulse * 0.55;
+
+      ambientMotes.rotation.y = t * 0.018;
+      renderer.render(scene, camera);
+    }
+    animate();
+  }
+})();
+</script>
+
+</body></html>
