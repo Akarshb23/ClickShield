@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ClickShield — Behavioral Cybersecurity Browser Defense</title>
+  <meta name="description" content="Real-time behavioral Chrome extension protecting users from ClickFix attacks, deceptive verification pages, and dangerous terminal command execution." />
+  <style>
+    :root {
+      --bg: #080808;
+      --surface: #121212;
+      --elevated: #1A1A1A;
+      --border: #262626;
+      --gold: #E5B83B;
+      --gold-hover: #F5CB5C;
+      --text: #F5F5F5;
+      --muted: #888888;
+      --red: #DC2626;
+      --green: #16A34A;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    header {
+      border-b: 1px solid var(--border);
+      padding: 18px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(14, 14, 14, 0.8);
+      backdrop-filter: blur(10px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: inherit;
+    }
+    .brand-icon {
+      width: 32px;
+      height: 32px;
+      border: 1px solid rgba(229, 184, 59, 0.5);
+      background: #171717;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--gold);
+      font-weight: bold;
+    }
+    .brand-name {
+      font-family: monospace;
+      font-weight: 800;
+      font-size: 15px;
+      letter-spacing: 0.1em;
+      color: var(--gold);
+      text-transform: uppercase;
+    }
+    nav a {
+      color: var(--muted);
+      text-decoration: none;
+      font-family: monospace;
+      font-size: 13px;
+      margin-left: 24px;
+      transition: color 0.2s;
+    }
+    nav a:hover { color: #fff; }
+    .btn-gold {
+      background: var(--gold);
+      color: #000;
+      font-family: monospace;
+      font-weight: 800;
+      font-size: 13px;
+      padding: 10px 20px;
+      border-radius: 4px;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      transition: background 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-gold:hover { background: var(--gold-hover); }
+    .btn-secondary {
+      background: #1C1C1C;
+      color: #F5F5F5;
+      font-family: monospace;
+      font-weight: 700;
+      font-size: 13px;
+      padding: 10px 20px;
+      border-radius: 4px;
+      text-decoration: none;
+      border: 1px solid var(--border);
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-secondary:hover { background: #262626; border-color: var(--gold); }
+    .hero {
+      max-width: 1000px;
+      margin: 80px auto 60px;
+      padding: 0 24px;
+      text-align: center;
+    }
+    .tag {
+      display: inline-block;
+      font-family: monospace;
+      font-size: 11px;
+      color: var(--gold);
+      background: rgba(229, 184, 59, 0.1);
+      border: 1px solid rgba(229, 184, 59, 0.3);
+      padding: 4px 12px;
+      border-radius: 100px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 24px;
+    }
+    h1 {
+      font-size: 48px;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      margin: 0 0 20px 0;
+    }
+    h1 span {
+      background: linear-gradient(135deg, #FFF 40%, var(--gold) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    p.hero-desc {
+      font-size: 18px;
+      color: var(--muted);
+      max-width: 720px;
+      margin: 0 auto 36px;
+    }
+    .hero-actions {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+    }
+    .section {
+      max-width: 1000px;
+      margin: 80px auto;
+      padding: 0 24px;
+    }
+    .section-title {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    .section-title h2 {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin: 0 0 10px 0;
+    }
+    .section-title p {
+      color: var(--muted);
+      font-size: 15px;
+      margin: 0;
+    }
+    .sim-container {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 32px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+    }
+    .sim-signals h3 {
+      font-family: monospace;
+      font-size: 14px;
+      color: var(--gold);
+      text-transform: uppercase;
+      margin: 0 0 16px 0;
+    }
+    .signal-check {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px;
+      background: #181818;
+      border: 1px solid #242424;
+      border-radius: 4px;
+      margin-bottom: 8px;
+      font-family: monospace;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .signal-check input {
+      accent-color: var(--gold);
+      cursor: pointer;
+    }
+    .sim-output {
+      background: #0A0A0A;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .sim-gauge {
+      font-size: 64px;
+      font-weight: 900;
+      font-family: monospace;
+      margin: 10px 0;
+    }
+    .sim-verdict {
+      font-family: monospace;
+      font-size: 13px;
+      font-weight: bold;
+      padding: 6px 14px;
+      border-radius: 4px;
+      margin-top: 10px;
+    }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 24px;
+    }
+    .feature-icon {
+      font-size: 24px;
+      margin-bottom: 16px;
+      color: var(--gold);
+    }
+    .feature-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .feature-desc {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 40px 24px;
+      text-align: center;
+      font-family: monospace;
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 100px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <a href="#" class="brand">
+      <div class="brand-icon">🛡️</div>
+      <span class="brand-name">ClickShield</span>
+    </a>
+    <nav>
+      <a href="#simulator">Risk Simulator</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#demo">Live Demo</a>
+      <a href="https://github.com/Akarshb23/ClickShield" target="_blank">GitHub</a>
+      <a href="/tests/fixtures/index.html" class="btn-gold">Launch Demo</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="tag">Local-First Behavioral Browser Defense</div>
+      <h1><span>Defend Against ClickFix Attacks</span><br />Before You Execute.</h1>
+      <p class="hero-desc">
+        ClickShield analyzes what a website is trying to coerce you into doing. It detects fake CAPTCHAs, clipboard hijacking, and PowerShell command execution instructions before dangerous payloads reach your terminal.
+      </p>
+      <div class="hero-actions">
+        <a href="https://github.com/Akarshb23/ClickShield" target="_blank" class="btn-gold">View on GitHub</a>
+        <a href="/tests/fixtures/index.html" class="btn-secondary">Test Live Scenarios →</a>
+      </div>
+    </section>
+
+    <section id="simulator" class="section">
+      <div class="section-title">
+        <h2>Interactive Threat Scoring Simulator</h2>
+        <p>Test ClickShield's multi-vector weighted scoring model in real time.</p>
+      </div>
+
+      <div class="sim-container">
+        <div class="sim-signals">
+          <h3>Detected Threat Signals</h3>
+
+          <label class="signal-check">
+            <span>Fake CAPTCHA / Deceptive Checkbox (+20)</span>
+            <input type="checkbox" id="sig-captcha" onchange="calculateSimRisk()" checked />
+          </label>
+
+          <label class="signal-check">
+            <span>Win + R / Run Dialog Instructions (+15)</span>
+            <input type="checkbox" id="sig-instruction" onchange="calculateSimRisk()" checked />
+          </label>
+
+          <label class="signal-check">
+            <span>Command Execution Cradle (irm | iex) (+25)</span>
+            <input type="checkbox" id="sig-cmd" onchange="calculateSimRisk()" checked />
+          </label>
+
+          <label class="signal-check">
+            <span>Programmatic Clipboard Write Hook (+25)</span>
+            <input type="checkbox" id="sig-clipboard" onchange="calculateSimRisk()" checked />
+          </label>
+
+          <label class="signal-check">
+            <span>Cloudflare / Microsoft Brand Impersonation (+15)</span>
+            <input type="checkbox" id="sig-impersonate" onchange="calculateSimRisk()" />
+          </label>
+
+          <label class="signal-check">
+            <span>High-Abuse Top Level Domain (.xyz, .top) (+10)</span>
+            <input type="checkbox" id="sig-tld" onchange="calculateSimRisk()" />
+          </label>
+        </div>
+
+        <div class="sim-output">
+          <div style="font-family: monospace; font-size: 12px; color: #888;">CALCULATED THREAT SCORE</div>
+          <div id="sim-score" class="sim-gauge" style="color: #DC2626;">85</div>
+          <div style="font-family: monospace; font-size: 11px; color: #555;">MAX CAPPED AT 100</div>
+
+          <div id="sim-badge" class="sim-verdict" style="background: rgba(220, 38, 38, 0.2); color: #F87171; border: 1px solid rgba(220, 38, 38, 0.4);">
+            CRITICAL THREAT &middot; SHADOW DOM INTERVENTION
+          </div>
+
+          <p id="sim-action" style="font-size: 12px; color: #aaa; margin-top: 16px; max-width: 300px;">
+            Active ClickFix vector confirmed. Dangerous terminal paste prevented and safe departure offered.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section id="features" class="section">
+      <div class="section-title">
+        <h2>Core Defense Modules</h2>
+        <p>Built from scratch on Chrome Extension Manifest V3.</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">🔍</div>
+          <div class="feature-title">Intent-Based Heuristics</div>
+          <div class="feature-desc">
+            Rather than relying solely on blocklists, ClickShield evaluates instructional sequences directed at users.
+          </div>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">📋</div>
+          <div class="feature-title">Clipboard Protection</div>
+          <div class="feature-desc">
+            Monitors both user clicks and programmatic <code>navigator.clipboard.writeText</code> calls containing command syntax.
+          </div>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🛡️</div>
+          <div class="feature-title">Shadow DOM Overlays</div>
+          <div class="feature-desc">
+            Intervention modals inject inside a closed Shadow DOM, preventing host page CSS from tampering with security alerts.
+          </div>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <div class="feature-title">Multi-Signal Correlation</div>
+          <div class="feature-desc">
+            Distinguishes between educational programming articles and coercive social engineering attacks.
+          </div>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🔒</div>
+          <div class="feature-title">100% Local-First</div>
+          <div class="feature-desc">
+            Zero cloud telemetry. Analysis, logs, and allowlists remain entirely inside the local Chrome storage sandbox.
+          </div>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">📊</div>
+          <div class="feature-title">Command Dashboard</div>
+          <div class="feature-desc">
+            Full-tab security analytics suite featuring GSAP gauges, Recharts threat breakdowns, and JSON audit logging.
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>ClickShield &middot; Open-Source Behavioral Cybersecurity Extension &middot; MIT License</p>
+    <p><a href="https://github.com/Akarshb23/ClickShield" target="_blank" style="color: var(--gold); text-decoration: none;">GitHub Repository</a> &middot; <a href="/docs/PRIVACY_POLICY.md" style="color: #aaa; text-decoration: none;">Privacy Policy</a> &middot; <a href="/docs/TESTING.md" style="color: #aaa; text-decoration: none;">Testing Guide</a></p>
+  </footer>
+
+  <script>
+    function calculateSimRisk() {
+      let score = 0;
+      if (document.getElementById("sig-captcha").checked) score += 20;
+      if (document.getElementById("sig-instruction").checked) score += 15;
+      if (document.getElementById("sig-cmd").checked) score += 25;
+      if (document.getElementById("sig-clipboard").checked) score += 25;
+      if (document.getElementById("sig-impersonate").checked) score += 15;
+      if (document.getElementById("sig-tld").checked) score += 10;
+
+      score = Math.min(score, 100);
+      document.getElementById("sim-score").textContent = score;
+
+      const scoreEl = document.getElementById("sim-score");
+      const badgeEl = document.getElementById("sim-badge");
+      const actionEl = document.getElementById("sim-action");
+
+      if (score >= 80) {
+        scoreEl.style.color = "#DC2626";
+        badgeEl.style.background = "rgba(220, 38, 38, 0.2)";
+        badgeEl.style.color = "#F87171";
+        badgeEl.style.borderColor = "rgba(220, 38, 38, 0.4)";
+        badgeEl.textContent = "CRITICAL THREAT · SHADOW DOM INTERVENTION";
+        actionEl.textContent = "Active ClickFix attack vector confirmed. Dangerous terminal paste prevented and safe departure offered.";
+      } else if (score >= 60) {
+        scoreEl.style.color = "#EA580C";
+        badgeEl.style.background = "rgba(234, 88, 12, 0.2)";
+        badgeEl.style.color = "#FB923C";
+        badgeEl.style.borderColor = "rgba(234, 88, 12, 0.4)";
+        badgeEl.textContent = "HIGH RISK · PROMINENT CAUTION";
+        actionEl.textContent = "Multiple threat indicators co-occur. Copy and paste behavior flagged for caution.";
+      } else if (score >= 30) {
+        scoreEl.style.color = "#D4A32C";
+        badgeEl.style.background = "rgba(212, 163, 44, 0.2)";
+        badgeEl.style.color = "#FDE047";
+        badgeEl.style.borderColor = "rgba(212, 163, 44, 0.4)";
+        badgeEl.textContent = "SUSPICIOUS · CONTEXTUAL ALERT";
+        actionEl.textContent = "Elevated suspicion. Passive monitoring active.";
+      } else {
+        scoreEl.style.color = "#16A34A";
+        badgeEl.style.background = "rgba(22, 163, 74, 0.2)";
+        badgeEl.style.color = "#4ADE80";
+        badgeEl.style.borderColor = "rgba(22, 163, 74, 0.4)";
+        badgeEl.textContent = "SECURE · PASSIVE MONITORING";
+        actionEl.textContent = "Typical page interactions. No deceptive patterns detected.";
+      }
+    }
+  </script>
+</body>
+</html>
+
