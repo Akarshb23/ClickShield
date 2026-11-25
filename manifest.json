@@ -30,7 +30,9 @@
       "js": [
         "src/content/index.ts"
       ],
-      "run_at": "document_start"
+      "run_at": "document_start",
+      "all_frames": true,
+      "match_about_blank": true
     },
     {
       "matches": [
@@ -40,7 +42,9 @@
         "src/injected/clipboard-monitor.ts"
       ],
       "world": "MAIN",
-      "run_at": "document_start"
+      "run_at": "document_start",
+      "all_frames": true,
+      "match_about_blank": true
     }
   ],
   "options_ui": {

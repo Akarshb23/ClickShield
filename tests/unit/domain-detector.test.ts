@@ -17,6 +17,14 @@ describe("Domain and Impersonation Detectors", () => {
     expect(signals[0].type).toBe("DOMAIN_IMPERSONATION");
   });
 
+  it("flags websites accessed directly via raw public IP address", () => {
+    const signals = detectDomainAnomalies("185.220.101.5");
+
+    expect(signals.length).toBeGreaterThan(0);
+    expect(signals[0].type).toBe("SUSPICIOUS_DOMAIN");
+    expect(signals[0].reason).toContain("public IP address");
+  });
+
   it("does not flag legitimate brand domains", () => {
     const pageText = "Cloudflare Turnstile DDoS protection is verifying your browser.";
     const signals = detectBrandImpersonation(pageText, "challenges.cloudflare.com");

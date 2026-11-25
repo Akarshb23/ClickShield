@@ -6,6 +6,29 @@ export const CAPTCHA_KEYWORDS = [
   "cloudflare turnstile",
   "security verification",
   "complete verification",
+  "are you human",
+  "prove you are not a robot",
+  "prove you are human",
+  "robot verification",
+  "click to verify",
+  "verification required",
+  "checking your browser",
+  "checking if the site connection is secure",
+  "ddos-guard",
+  "ddos protection",
+  "anti-bot",
+  "bot detection",
+  "security check",
+  "device verification",
+  "fix connection error",
+  "windows update required",
+  "browser update required",
+  "chrome update",
+  "dns resolution error",
+  "certificate verification failed",
+  "audio error",
+  "microphone error",
+  "turnstile",
 ];
 
 export const LEGITIMATE_CAPTCHA_IFRAMES = [
@@ -13,5 +36,8 @@ export const LEGITIMATE_CAPTCHA_IFRAMES = [
   "recaptcha.net",
   "challenges.cloudflare.com",
   "hcaptcha.com",
+  "arkoselabs.com",
+  "funcaptcha.com",
+  "geetest.com",
 ];
 

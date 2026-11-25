@@ -28,19 +28,23 @@ export function detectCaptchaAnomalies(context: CaptchaScanContext): ThreatSigna
     });
   }
 
-  // Look for text explicitly directing manual steps to 'solve' verification
+  // Look for text explicitly directing manual steps to 'solve' verification or fix simulated errors
   const manualSolvingDirectives = [
     "follow these steps to verify",
     "manual verification steps",
     "verification code will be generated",
     "to prove you are not a robot follow",
     "press the buttons below to verify",
+    "copy and paste to fix",
+    "perform the following steps",
+    "run the command below to verify",
+    "click verify and follow instructions",
   ];
 
-  if (claimsCaptcha && manualSolvingDirectives.some((d) => lowerText.includes(d))) {
+  if (claimsCaptcha && !hasLegitIframe && manualSolvingDirectives.some((d) => lowerText.includes(d))) {
     signals.push({
       type: "FAKE_CAPTCHA",
-      reason: "Deceptive verification prompt claims manual multi-step user actions are required.",
+      reason: "Deceptive verification prompt claims manual user actions or commands are required.",
     });
   }
 

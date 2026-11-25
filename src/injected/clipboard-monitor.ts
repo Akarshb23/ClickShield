@@ -1,7 +1,7 @@
 /**
  * ClickShield MAIN World Clipboard Monitor
  * Operates in the webpage execution context to observe programmatic
- * navigator.clipboard.writeText calls commonly abused in ClickFix attacks.
+ * navigator.clipboard and document.execCommand calls abused in ClickFix attacks.
  *
  * Privacy guarantee: Does NOT store or transmit personal data or passwords.
  * Only flags command patterns matching known attack vectors.
@@ -12,37 +12,54 @@
   if ((window as any).__CLICKSHIELD_MAIN_MONITOR_ACTIVE__) return;
   (window as any).__CLICKSHIELD_MAIN_MONITOR_ACTIVE__ = true;
 
-  if (!navigator.clipboard || typeof navigator.clipboard.writeText !== "function") {
-    return;
+  const SUSPICIOUS_COMMAND_REGEX =
+    /\b(powershell(\.exe)?|pwsh|cmd(\.exe)?|mshta(\.exe)?|bitsadmin(\.exe)?|certutil(\.exe)?|regsvr32(\.exe)?|rundll32(\.exe)?|wscript|cscript|irm\s+|iex\s+|curl.*\||wget.*\||invoke-expression|invoke-webrequest|downloadstring|start-process|osascript|bash\s+-c|sh\s+-c|\[convert\]::frombase64string)\b/i;
+
+  function notifySuspiciousPayload(text: string) {
+    try {
+      window.dispatchEvent(
+        new CustomEvent("clickshield:suspicious-copy", {
+          detail: {
+            timestamp: Date.now(),
+            hasCommandSyntax: true,
+            snippet: text.slice(0, 100),
+          },
+        })
+      );
+    } catch {}
   }
 
-  const originalWriteText = navigator.clipboard.writeText.bind(navigator.clipboard);
+  // 1. Hook navigator.clipboard.writeText
+  if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+    const originalWriteText = navigator.clipboard.writeText.bind(navigator.clipboard);
 
-  navigator.clipboard.writeText = async function (text: string): Promise<void> {
-    try {
-      const lower = (text || "").toLowerCase();
+    navigator.clipboard.writeText = async function (text: string): Promise<void> {
+      try {
+        if (text && SUSPICIOUS_COMMAND_REGEX.test(text)) {
+          notifySuspiciousPayload(text);
+        }
+      } catch {}
 
-      // Check for suspicious command indicators in programmatic clipboard writes
-      const isSuspicious =
-        /\b(powershell|cmd\.exe|mshta|bitsadmin|irm |iex |curl.*\||wget.*\|)\b/i.test(lower);
+      return originalWriteText(text);
+    };
+  }
 
-      if (isSuspicious) {
-        // Dispatch custom event to notify ClickShield isolated content script
-        window.dispatchEvent(
-          new CustomEvent("clickshield:suspicious-copy", {
-            detail: {
-              timestamp: Date.now(),
-              hasCommandSyntax: true,
-              snippet: text.slice(0, 100), // bounded snippet for explainable warning
-            },
-          })
-        );
-      }
-    } catch {
-      // Do not break page flow on internal monitor exception
-    }
+  // 2. Hook document.execCommand("copy") commonly used by older ClickFix and phishing scripts
+  if (typeof document.execCommand === "function") {
+    const originalExecCommand = document.execCommand.bind(document);
 
-    return originalWriteText(text);
-  };
+    document.execCommand = function (commandId: string, showUI?: boolean, value?: string): boolean {
+      try {
+        if ((commandId || "").toLowerCase() === "copy") {
+          const selectedText = document.getSelection()?.toString() || "";
+          if (selectedText && SUSPICIOUS_COMMAND_REGEX.test(selectedText)) {
+            notifySuspiciousPayload(selectedText);
+          }
+        }
+      } catch {}
+
+      return originalExecCommand(commandId, showUI, value);
+    };
+  }
 })();
 

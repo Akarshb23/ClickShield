@@ -5,49 +5,105 @@ import { detectExecutionCommands } from "../engine/detectors/command-detector";
 import { detectDomainAnomalies } from "../engine/detectors/domain-detector";
 import { detectBrandImpersonation } from "../engine/detectors/impersonation-detector";
 
+function extractShadowDomData(root: Node): { text: string; snippets: string[] } {
+  let text = "";
+  const snippets: string[] = [];
+
+  try {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT, null);
+    let currentNode: Node | null = walker.currentNode;
+
+    while (currentNode) {
+      if (currentNode instanceof HTMLElement) {
+        // Collect data attributes where payloads or commands hide
+        for (const attr of currentNode.attributes) {
+          if (attr.name.startsWith("data-") || attr.name === "title" || attr.name === "aria-label") {
+            if (attr.value && attr.value.length > 5) {
+              snippets.push(attr.value);
+            }
+          }
+        }
+
+        // Check if element has an open shadow root
+        if (currentNode.shadowRoot && currentNode.id !== "clickshield-security-warning") {
+          const shadowData = extractShadowDomData(currentNode.shadowRoot);
+          text += " " + shadowData.text;
+          snippets.push(...shadowData.snippets);
+        }
+      }
+      currentNode = walker.nextNode();
+    }
+  } catch {}
+
+  return { text, snippets };
+}
+
 export function scanPage(): ThreatSignal[] {
   // Avoid scanning inside ClickShield's own UI elements
   if (typeof document === "undefined" || !document.body) {
     return [];
   }
 
-  const rawText = document.body.innerText || "";
+  const titleText = document.title || "";
+  const bodyInnerText = document.body.innerText || "";
+  const bodyTextContent = document.body.textContent || "";
+  const rawText = `${titleText} ${bodyInnerText} ${bodyTextContent}`;
   const hostname = window.location.hostname || "local-file";
 
   // 1. Gather iframe sources to check for legitimate CAPTCHA providers
   const iframes = Array.from(document.querySelectorAll("iframe"));
   const iframeSources = iframes
-    .map((iframe) => iframe.src || iframe.getAttribute("data-src") || "")
+    .map((iframe) => iframe.src || iframe.getAttribute("data-src") || iframe.getAttribute("srcdoc") || "")
     .filter(Boolean);
 
   // 2. Identify potential fake captcha checkboxes or deceptive verification elements
   const potentialButtons = document.querySelectorAll(
-    "button, [role='button'], div[class*='captcha'], div[class*='turnstile'], [id*='captcha'], [id*='cf-turnstile'], [id*='verify'], [class*='verify']"
+    "button, [role='button'], div[class*='captcha'], div[class*='turnstile'], [id*='captcha'], [id*='cf-turnstile'], [id*='verify'], [class*='verify'], div[class*='checkbox'], span[class*='checkbox']"
   );
   const hasFakeCheckbox = Array.from(potentialButtons).some((el) => {
     const text = (el.textContent || "").toLowerCase();
     const id = (el.id || "").toLowerCase();
     const cls = (el.className || "").toString().toLowerCase();
+    const aria = (el.getAttribute("aria-label") || "").toLowerCase();
     return (
-      /captcha|turnstile|verify|human|robot|check/i.test(text) ||
-      /captcha|turnstile|verify|robot/i.test(id) ||
-      /captcha|turnstile|verify|robot/i.test(cls)
+      /captcha|turnstile|verify|human|robot|check|prove/i.test(text) ||
+      /captcha|turnstile|verify|robot|turnstile/i.test(id) ||
+      /captcha|turnstile|verify|robot|turnstile/i.test(cls) ||
+      /captcha|turnstile|verify|human/i.test(aria)
     );
   });
 
-  // 3. Extract text from code blocks, input values, and pre tags where payloads hide
-  const codeSnippets = Array.from(document.querySelectorAll("code, pre, blockquote, input[type='text']"))
-    .map((el) => (el instanceof HTMLInputElement ? el.value : el.textContent || ""))
+  // 3. Extract text from code blocks, inputs (including hidden), textareas, and pre tags
+  const codeElements = Array.from(
+    document.querySelectorAll("code, pre, blockquote, input, textarea, [data-clipboard-text], [data-copy], [data-payload], [data-command]")
+  );
+  const codeSnippets = codeElements
+    .map((el) => {
+      let content = "";
+      if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
+        content = `${el.value} ${el.placeholder || ""}`;
+      } else {
+        content = el.textContent || "";
+      }
+
+      // Check data attributes for hidden payloads
+      const dataClipboard = el.getAttribute("data-clipboard-text") || el.getAttribute("data-copy") || el.getAttribute("data-payload") || el.getAttribute("data-command") || "";
+      return `${content} ${dataClipboard}`;
+    })
     .join(" ");
 
-  const combinedContent = `${rawText} ${codeSnippets}`;
+  // 4. Shadow DOM recursive traversal for modern modular web applications
+  const shadowDomData = extractShadowDomData(document.body);
+  const shadowText = `${shadowDomData.text} ${shadowDomData.snippets.join(" ")}`;
+
+  const combinedContent = `${rawText} ${codeSnippets} ${shadowText}`;
 
   const allSignals: ThreatSignal[] = [];
 
   // Run Modular Detectors
   allSignals.push(
     ...detectCaptchaAnomalies({
-      text: rawText,
+      text: combinedContent,
       hasIframes: iframes.length > 0,
       iframeSources,
       hasFakeCheckbox,
@@ -57,7 +113,7 @@ export function scanPage(): ThreatSignal[] {
   allSignals.push(...detectSuspiciousInstructions(combinedContent));
   allSignals.push(...detectExecutionCommands(combinedContent));
   allSignals.push(...detectDomainAnomalies(hostname));
-  allSignals.push(...detectBrandImpersonation(rawText, hostname));
+  allSignals.push(...detectBrandImpersonation(combinedContent, hostname));
 
   return allSignals;
 }

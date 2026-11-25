@@ -33,19 +33,27 @@ export class ClipboardGuard {
         const selection = document.getSelection()?.toString() || "";
         const target = event.target as HTMLElement | null;
 
-        // Check if copy originates from a deceptive button (e.g., "Verify", "Copy Code")
-        const buttonText = target?.closest("button, [role='button']")?.textContent || "";
-        const isVerificationButton = /verify|human|solve|copy\s*command/i.test(buttonText);
+        // Check if copy originates from a deceptive button or link
+        const buttonText = target?.closest("button, a, [role='button']")?.textContent || "";
+        const isDeceptiveContext =
+          /verify|human|solve|captcha|fix|update|download|code|command|continue/i.test(buttonText);
 
         const hasCommandSyntax =
-          /\b(powershell|cmd|irm|iex|mshta|bitsadmin|curl.*\||wget.*\|)\b/i.test(selection);
+          /\b(powershell|pwsh|cmd|irm|iex|mshta|bitsadmin|certutil|curl.*\||wget.*\||invoke-expression|invoke-webrequest|downloadstring|start-process|osascript)\b/i.test(
+            selection
+          );
 
-        if (isVerificationButton && hasCommandSyntax) {
-          logger.warn("Copy event triggered on verification element containing command syntax");
+        const isBlatantPayload =
+          /\b(powershell.*(-w(indowstyle)?|-e(nc)?|-nop)|(irm|iex|invoke-expression).*http|certutil.*-urlcache|mshta|curl.*\|\s*(ba)?sh)\b/i.test(
+            selection
+          );
+
+        if ((isDeceptiveContext && hasCommandSyntax) || isBlatantPayload) {
+          logger.warn("Copy event triggered on element containing command syntax");
 
           callbacks.onThreatDetected({
             type: "CLIPBOARD_MANIPULATION",
-            reason: "User clicked verification button that copies executable commands to clipboard.",
+            reason: "User interaction triggered clipboard copy with executable command syntax.",
             snippet: selection.slice(0, 100),
           });
 

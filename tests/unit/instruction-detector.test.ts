@@ -19,6 +19,15 @@ describe("Instruction Detector", () => {
     expect(signals[0].type).toBe("SUSPICIOUS_INSTRUCTION");
   });
 
+  it("detects step-by-step ClickFix sequence pattern", () => {
+    const text = "Step 1: Press Win + R to open Run. Step 2: Press Ctrl + V to paste. Step 3: Hit Enter to complete verification.";
+    const signals = detectSuspiciousInstructions(text);
+
+    expect(signals.length).toBeGreaterThan(0);
+    expect(signals[0].type).toBe("SUSPICIOUS_INSTRUCTION");
+    expect(signals[0].reason).toContain("ClickFix sequence");
+  });
+
   it("ignores regular benign web content", () => {
     const text = "Welcome to the photography blog. Click here to see gallery images.";
     const signals = detectSuspiciousInstructions(text);

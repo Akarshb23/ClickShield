@@ -20,16 +20,21 @@ export class CopyInterceptor {
           const selection = document.getSelection()?.toString() || "";
           const target = event.target as HTMLElement | null;
 
-          const buttonContext = target?.closest("button, [role='button']")?.textContent || "";
+          const buttonContext = target?.closest("button, a, [role='button']")?.textContent || "";
           const isDeceptiveContext =
-            /verify|human|solve|turnstile|recaptcha|copy\s*(code|command)/i.test(buttonContext);
+            /verify|human|solve|turnstile|recaptcha|fix|update|download|code|command/i.test(buttonContext);
 
           const hasDangerousPayload =
-            /\b(powershell|cmd(\.exe)?|mshta|bitsadmin|irm\s+|iex\s+|curl.*\||wget.*\|)\b/i.test(
+            /\b(powershell|pwsh|cmd(\.exe)?|mshta|bitsadmin|certutil|regsvr32|rundll32|irm\s+|iex\s+|invoke-expression|curl.*\||wget.*\||osascript|bash\s+-c)\b/i.test(
               selection
             );
 
-          if (isDeceptiveContext && hasDangerousPayload) {
+          const isBlatantAttack =
+            /\b(powershell.*(-w(indowstyle)?\s+h|-e(nc)?|-nop)|(irm|iex).*http|certutil.*-urlcache|mshta|curl.*\|\s*(ba)?sh)\b/i.test(
+              selection
+            );
+
+          if ((isDeceptiveContext && hasDangerousPayload) || isBlatantAttack) {
             // Block copying the malicious command payload
             event.preventDefault();
             event.stopImmediatePropagation();

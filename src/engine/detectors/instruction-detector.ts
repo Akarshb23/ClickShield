@@ -5,27 +5,32 @@ export function detectSuspiciousInstructions(text: string): ThreatSignal[] {
   const lower = text.toLowerCase();
 
   // Shortcut combinations commonly weaponized in ClickFix
-  const winRPattern = /\b(press|hit|hold)\s+(win(dows)?\s*\+\s*r|windows\s*key\s*\+\s*r)\b/i;
-  const runDialogPattern = /\b(open|launch)\s+(the\s+)?run\s+dialog\b/i;
-  const ctrlVPattern = /\b(press|hit)\s+(ctrl\s*\+\s*v|control\s*\+\s*v)\b/i;
-  const pasteEnterPattern = /\bpaste(\s+.*)?\s+and\s+(press|hit)\s+enter\b/i;
+  const winRPattern = /\b(press|hit|hold|type|open)?\s*(the\s+)?(win(dows)?(\s*key)?\s*[\+\-]\s*r|win\s*r|run\s*(dialog|box|window))\b/i;
+  const winXPattern = /\b(win(dows)?\s*[\+\-]\s*[xs])\b/i;
+  const runDialogPattern = /\b(open|launch|in\s+the)\s+(the\s+)?run\s*(dialog|box|window)?\b/i;
+  const ctrlVPattern = /\b(press|hit)?\s*(ctrl|control)\s*[\+\-]\s*v\b/i;
+  const pasteEnterPattern = /\bpaste(\s+.*)?\s+(and\s+)?(press|hit)?\s*enter\b/i;
+  const pasteGeneral = /\b(right[\s\-]*click\s+and\s+)?paste\s+(it|the\s+(code|command|key|text|script|payload))\b/i;
   const terminalInstruction =
-    /\b(open|launch|paste.*into|copy.*into|type.*into|into)\s+(the\s+)?(powershell|cmd|terminal|command\s+prompt)\b/i;
+    /\b(open|launch|run|paste.*into|copy.*into|type.*into|into)\s+(the\s+)?(powershell(\.exe)?|cmd(\.exe)?|terminal|command\s+prompt|bash|zsh)\b/i;
+  const stepPattern = /(1[\.\)]\s*.*?(win\s*[\+\-]?\s*r|run).*?2[\.\)]\s*.*?(ctrl\s*[\+\-]?\s*v|paste).*?3[\.\)]\s*.*?(enter|ok))/is;
+  const macTerminalPattern = /\b(open\s+terminal|press\s+(cmd|command)\s*[\+\-]\s*space|paste\s+into\s+terminal)\b/i;
 
-  const hasWinR = winRPattern.test(lower) || runDialogPattern.test(lower);
-  const hasPasteEnter = ctrlVPattern.test(lower) || pasteEnterPattern.test(lower);
-  const hasTerminal = terminalInstruction.test(lower);
+  const hasWinR = winRPattern.test(lower) || winXPattern.test(lower) || runDialogPattern.test(lower);
+  const hasPasteEnter = ctrlVPattern.test(lower) || pasteEnterPattern.test(lower) || pasteGeneral.test(lower);
+  const hasTerminal = terminalInstruction.test(lower) || macTerminalPattern.test(lower);
+  const hasStepSequence = stepPattern.test(lower);
 
-  if (hasWinR && (hasPasteEnter || hasTerminal)) {
+  if (hasStepSequence || (hasWinR && (hasPasteEnter || hasTerminal))) {
     signals.push({
       type: "SUSPICIOUS_INSTRUCTION",
-      reason: "Page directs user to open Run dialog (Win+R) and paste instructions.",
-      snippet: "Win+R / paste sequence detected.",
+      reason: "Page directs user to open Run dialog (Win+R) and execute commands in ClickFix sequence.",
+      snippet: "Win+R / terminal execution sequence detected.",
     });
   } else if (hasWinR) {
     signals.push({
       type: "SUSPICIOUS_INSTRUCTION",
-      reason: "Page instructs the user to invoke the operating system Run dialog.",
+      reason: "Page instructs the user to invoke the operating system Run dialog (Win+R).",
       snippet: "Win+R shortcut instruction.",
     });
   } else if (hasTerminal || hasPasteEnter) {
