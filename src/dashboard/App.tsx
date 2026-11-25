@@ -11,12 +11,17 @@ import {
   Plus,
   X,
   FileCheck2,
+  BarChart2,
+  Search,
+  Filter,
 } from "lucide-react";
+import { ThreatChart } from "./components/ThreatChart";
+import { ThreatDetailsModal } from "./components/ThreatDetailsModal";
 import type { ThreatRecord, SecurityStatistics } from "../shared/types/threat";
 import type { ClickShieldSettings } from "../shared/types/settings";
 
 export default function DashboardApp() {
-  const [activeTab, setActiveTab] = useState<"overview" | "history" | "allowlist">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "history" | "analytics" | "allowlist">("overview");
   const [stats, setStats] = useState<SecurityStatistics>({
     pagesScanned: 0,
     threatsDetected: 0,
@@ -26,6 +31,11 @@ export default function DashboardApp() {
   const [allowlist, setAllowlist] = useState<string[]>([]);
   const [newDomain, setNewDomain] = useState("");
   const [settings, setSettings] = useState<ClickShieldSettings | null>(null);
+
+  // Search & Filter
+  const [searchQuery, setSearchQuery] = useState("");
+  const [levelFilter, setLevelFilter] = useState<string>("ALL");
+  const [selectedThreat, setSelectedThreat] = useState<ThreatRecord | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -56,12 +66,12 @@ export default function DashboardApp() {
     }
   };
 
-  const handleAddAllowlist = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newDomain.trim()) return;
+  const handleAddAllowlist = async (domainToAdd: string) => {
+    const clean = domainToAdd.trim();
+    if (!clean) return;
     const res = await chrome.runtime.sendMessage({
       type: "ALLOWLIST_ADD",
-      payload: { hostname: newDomain.trim() },
+      payload: { hostname: clean },
     });
     if (res?.allowlist) {
       setAllowlist(res.allowlist);
@@ -77,8 +87,23 @@ export default function DashboardApp() {
     if (res?.allowlist) setAllowlist(res.allowlist);
   };
 
+  // Filtered threats
+  const filteredThreats = threats.filter((t) => {
+    const matchesSearch =
+      t.hostname.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      t.signals.some((s) => s.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesLevel = levelFilter === "ALL" || t.riskLevel === levelFilter;
+    return matchesSearch && matchesLevel;
+  });
+
   return (
     <div className="flex min-h-screen bg-[#080808] text-[#F5F5F5] font-sans">
+      <ThreatDetailsModal
+        threat={selectedThreat}
+        onClose={() => setSelectedThreat(null)}
+        onAllowlist={(h) => handleAddAllowlist(h)}
+      />
+
       {/* Sidebar */}
       <aside className="w-64 border-r border-[#222222] bg-[#0E0E0E] flex flex-col justify-between p-5">
         <div>
@@ -110,6 +135,18 @@ export default function DashboardApp() {
             </button>
 
             <button
+              onClick={() => setActiveTab("analytics")}
+              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded transition-colors text-left cursor-pointer ${
+                activeTab === "analytics"
+                  ? "bg-[#1E1E1E] text-[#E5B83B] border-l-2 border-[#E5B83B]"
+                  : "text-neutral-400 hover:bg-[#161616] hover:text-neutral-200"
+              }`}
+            >
+              <BarChart2 className="w-4 h-4" />
+              Threat Analytics
+            </button>
+
+            <button
               onClick={() => setActiveTab("history")}
               className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded transition-colors text-left cursor-pointer ${
                 activeTab === "history"
@@ -138,7 +175,7 @@ export default function DashboardApp() {
         <div className="border-t border-[#222222] pt-4 font-mono text-[11px] text-neutral-500">
           <div className="flex items-center gap-2 mb-1">
             <span className="w-2 h-2 rounded-full bg-[#16A34A] animate-pulse" />
-            <span className="text-neutral-300">Local-First Engine</span>
+            <span className="text-neutral-300">Local-First Defense</span>
           </div>
           <div>Manifest V3 · v0.1.0</div>
         </div>
@@ -202,7 +239,7 @@ export default function DashboardApp() {
                   {stats.interventions}
                 </div>
                 <div className="text-[10px] text-neutral-500 font-mono mt-1">
-                  Alerts & clipboard actions
+                  Alerts & copy blocks
                 </div>
               </div>
 
@@ -220,7 +257,15 @@ export default function DashboardApp() {
               </div>
             </div>
 
-            {/* Recent threats quick view */}
+            {/* Quick Threat Chart preview */}
+            <div className="p-5 rounded bg-[#111111] border border-[#222222]">
+              <h2 className="text-sm font-bold font-mono text-neutral-200 uppercase tracking-wider mb-4">
+                Threat Signal Distribution
+              </h2>
+              <ThreatChart threats={threats} />
+            </div>
+
+            {/* Recent threats table */}
             <div className="rounded bg-[#111111] border border-[#222222] p-5">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-sm font-bold font-mono text-neutral-200 uppercase tracking-wider">
@@ -247,7 +292,7 @@ export default function DashboardApp() {
                         <th className="pb-3">RISK SCORE</th>
                         <th className="pb-3">LEVEL</th>
                         <th className="pb-3">DETECTED SIGNALS</th>
-                        <th className="pb-3">TIMESTAMP</th>
+                        <th className="pb-3">DETAILS</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#1C1C1C]">
@@ -271,8 +316,13 @@ export default function DashboardApp() {
                           <td className="py-3 text-neutral-400">
                             {threat.signals.map((s) => s.replace(/_/g, " ")).join(", ")}
                           </td>
-                          <td className="py-3 text-neutral-500 text-[11px]">
-                            {new Date(threat.timestamp).toLocaleTimeString()}
+                          <td className="py-3">
+                            <button
+                              onClick={() => setSelectedThreat(threat)}
+                              className="text-neutral-400 hover:text-[#E5B83B] cursor-pointer"
+                            >
+                              Inspect →
+                            </button>
                           </td>
                         </tr>
                       ))}
@@ -280,6 +330,59 @@ export default function DashboardApp() {
                   </table>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === "analytics" && (
+          <div className="space-y-6">
+            <div className="p-6 rounded bg-[#111111] border border-[#222222]">
+              <h2 className="text-base font-bold font-mono text-neutral-200 mb-1">
+                Threat Vector Frequencies
+              </h2>
+              <p className="text-xs font-mono text-neutral-400 mb-6">
+                Relative prevalence of deceptive verification mechanisms, clipboard hooks, and LOLBin command cradles.
+              </p>
+              <ThreatChart threats={threats} />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-5 rounded bg-[#111111] border border-[#222222]">
+                <h3 className="text-xs font-mono font-bold text-neutral-300 uppercase mb-3">
+                  Behavioral Guard Efficacy
+                </h3>
+                <div className="space-y-3 font-mono text-xs">
+                  <div className="flex justify-between py-1.5 border-b border-[#1C1C1C]">
+                    <span className="text-neutral-400">Total Scans Performed:</span>
+                    <span className="font-bold text-neutral-200">{stats.pagesScanned}</span>
+                  </div>
+                  <div className="flex justify-between py-1.5 border-b border-[#1C1C1C]">
+                    <span className="text-neutral-400">Suspicious Pages Caught:</span>
+                    <span className="font-bold text-[#E5B83B]">{stats.threatsDetected}</span>
+                  </div>
+                  <div className="flex justify-between py-1.5">
+                    <span className="text-neutral-400">Interventions Dispatched:</span>
+                    <span className="font-bold text-[#4ADE80]">{stats.interventions}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-5 rounded bg-[#111111] border border-[#222222]">
+                <h3 className="text-xs font-mono font-bold text-neutral-300 uppercase mb-3">
+                  Privacy & Telemetry Verification
+                </h3>
+                <div className="space-y-2 text-xs font-mono text-neutral-400">
+                  <p className="flex items-center gap-2 text-[#4ADE80]">
+                    <ShieldCheck className="w-4 h-4" /> 100% Local Heuristic Processing
+                  </p>
+                  <p className="flex items-center gap-2 text-[#4ADE80]">
+                    <ShieldCheck className="w-4 h-4" /> Zero External Cloud Requests
+                  </p>
+                  <p className="flex items-center gap-2 text-[#4ADE80]">
+                    <ShieldCheck className="w-4 h-4" /> No Keystroke or Raw Clipboard Storage
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -292,7 +395,7 @@ export default function DashboardApp() {
                   Full Threat Log
                 </h2>
                 <p className="text-xs font-mono text-neutral-400">
-                  Stored securely in local extension storage. Never transmitted off-device.
+                  Inspect recorded attack vectors or export historical detections.
                 </p>
               </div>
 
@@ -306,9 +409,37 @@ export default function DashboardApp() {
               )}
             </div>
 
-            {threats.length === 0 ? (
+            {/* Search & Filter toolbar */}
+            <div className="flex items-center gap-3 mb-6">
+              <div className="flex-1 relative">
+                <Search className="w-4 h-4 text-neutral-500 absolute left-3 top-2.5" />
+                <input
+                  type="text"
+                  placeholder="Filter by hostname or signal type..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-[#161616] border border-[#2A2A2A] rounded pl-9 pr-3 py-2 text-xs font-mono text-neutral-200 focus:outline-none focus:border-[#E5B83B]"
+                />
+              </div>
+
+              <div className="flex items-center gap-1.5 font-mono text-xs">
+                <Filter className="w-3.5 h-3.5 text-neutral-400" />
+                <select
+                  value={levelFilter}
+                  onChange={(e) => setLevelFilter(e.target.value)}
+                  className="bg-[#161616] border border-[#2A2A2A] rounded px-2.5 py-2 text-xs font-mono text-neutral-200 focus:outline-none cursor-pointer"
+                >
+                  <option value="ALL">All Levels</option>
+                  <option value="CRITICAL">Critical Only</option>
+                  <option value="HIGH">High Risk</option>
+                  <option value="SUSPICIOUS">Suspicious</option>
+                </select>
+              </div>
+            </div>
+
+            {filteredThreats.length === 0 ? (
               <div className="text-center py-16 font-mono text-xs text-neutral-500">
-                Threat log is currently empty.
+                No matching threat records found.
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -320,11 +451,12 @@ export default function DashboardApp() {
                       <th className="pb-3">RISK SCORE</th>
                       <th className="pb-3">LEVEL</th>
                       <th className="pb-3">SIGNALS</th>
-                      <th className="pb-3">INTERVENTION</th>
+                      <th className="pb-3">ACTION</th>
+                      <th className="pb-3">DETAILS</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#1C1C1C]">
-                    {threats.map((threat) => (
+                    {filteredThreats.map((threat) => (
                       <tr key={threat.id} className="hover:bg-[#171717]">
                         <td className="py-3 text-neutral-400 text-[11px]">
                           {new Date(threat.timestamp).toLocaleString()}
@@ -348,6 +480,14 @@ export default function DashboardApp() {
                           {threat.signals.map((s) => s.replace(/_/g, " ")).join(", ")}
                         </td>
                         <td className="py-3 text-neutral-300">{threat.action}</td>
+                        <td className="py-3">
+                          <button
+                            onClick={() => setSelectedThreat(threat)}
+                            className="text-neutral-400 hover:text-[#E5B83B] cursor-pointer"
+                          >
+                            Inspect →
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -366,7 +506,13 @@ export default function DashboardApp() {
               Domains added here will be exempted from heuristic warnings and interventions.
             </p>
 
-            <form onSubmit={handleAddAllowlist} className="flex gap-3 mb-6">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleAddAllowlist(newDomain);
+              }}
+              className="flex gap-3 mb-6"
+            >
               <input
                 type="text"
                 placeholder="e.g. portal.company.internal"
@@ -411,4 +557,3 @@ export default function DashboardApp() {
     </div>
   );
 }
-
