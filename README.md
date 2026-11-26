@@ -134,7 +134,6 @@ Webpage (Top Frame + Subframes)
 - [Detection Rules & Scoring Model](docs/DETECTION_RULES.md)
 - [Threat Model & Security Boundaries](docs/THREAT_MODEL.md)
 - [Testing & Quality Assurance Guide](docs/TESTING.md)
-- [Demo & Presentation Guide](docs/DEMO_GUIDE.md)
 - [Privacy Policy](docs/PRIVACY_POLICY.md)
 
 ---
