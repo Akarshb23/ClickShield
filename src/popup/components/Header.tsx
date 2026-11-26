@@ -1,45 +1,59 @@
 import React from "react";
-import { Shield, ShieldAlert, ShieldCheck } from "lucide-react";
+import { Shield } from "lucide-react";
 
 interface HeaderProps {
   protectionActive: boolean;
   onToggleProtection: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ protectionActive, onToggleProtection }) => {
+export const Header: React.FC<HeaderProps> = ({
+  protectionActive,
+  onToggleProtection,
+}) => {
+  const nextAction = protectionActive ? "off" : "on";
+
   return (
-    <div className="flex items-center justify-between border-b border-[#222222] px-4 py-3 bg-[#0D0D0D]">
+    <header className="flex items-center justify-between border-b border-[#222222] bg-[#0D0D0D] px-4 py-3">
       <div className="flex items-center gap-2.5">
-        <div className="relative flex items-center justify-center w-8 h-8 rounded border border-[#E5B83B]/40 bg-[#171717]">
-          <Shield className="w-4 h-4 text-[#E5B83B]" />
+        <div
+          aria-hidden="true"
+          className="relative flex h-8 w-8 items-center justify-center rounded border border-[#E5B83B]/40 bg-[#171717]"
+        >
+          <Shield className="h-4 w-4 text-[#E5B83B]" />
         </div>
+
         <div>
-          <div className="text-xs font-bold tracking-widest text-[#E5B83B] uppercase">
+          <div className="text-xs font-bold uppercase tracking-widest text-[#E5B83B]">
             ClickShield
           </div>
-          <div className="text-[10px] text-neutral-400 font-mono tracking-tight">
+          <div className="font-mono text-[10px] tracking-tight text-neutral-400">
             BEHAVIORAL DEFENSE
           </div>
         </div>
       </div>
 
       <button
+        type="button"
         onClick={onToggleProtection}
-        className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-mono border transition-all cursor-pointer ${
+        aria-pressed={protectionActive}
+        aria-label={`Turn real-time behavioral protection ${nextAction}`}
+        title={`Turn real-time behavioral protection ${nextAction}`}
+        className={`flex cursor-pointer items-center gap-1.5 rounded border px-2.5 py-1 font-mono text-[11px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E5B83B] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0D0D0D] ${
           protectionActive
             ? "border-[#16A34A]/50 bg-[#16A34A]/10 text-[#4ADE80]"
             : "border-[#DC2626]/50 bg-[#DC2626]/10 text-[#F87171]"
         }`}
-        title="Toggle Real-Time Behavioral Guard"
       >
         <span
-          className={`w-1.5 h-1.5 rounded-full ${
-            protectionActive ? "bg-[#4ADE80] animate-pulse" : "bg-[#F87171]"
+          aria-hidden="true"
+          className={`h-1.5 w-1.5 rounded-full ${
+            protectionActive ? "animate-pulse bg-[#4ADE80]" : "bg-[#F87171]"
           }`}
         />
-        {protectionActive ? "ACTIVE" : "DISABLED"}
+        <span aria-live="polite" aria-atomic="true">
+          {protectionActive ? "ACTIVE" : "DISABLED"}
+        </span>
       </button>
-    </div>
+    </header>
   );
 };
-

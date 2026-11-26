@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ClickShield Trusted-Domain Negative Test</title>
+  <style>
+    :root { color-scheme: dark; font-family: ui-sans-serif, system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 28px; color: #f3f4f6; background: #101317; }
+    main { width: min(720px, 100%); padding: 30px; border: 1px solid #39424e; border-radius: 16px; background: #181e25; box-shadow: 0 24px 70px #0008; }
+    .tag { display: inline-block; padding: 5px 9px; border: 1px solid #398b68; border-radius: 999px; color: #82e0ad; font: 700 11px ui-monospace, monospace; letter-spacing: .08em; }
+    h1 { margin: 18px 0 8px; font-size: clamp(25px, 5vw, 34px); }
+    p { color: #c4ccd6; line-height: 1.65; }
+    .panel { margin: 24px 0; padding: 20px; border: 1px solid #485463; border-radius: 10px; background: #202833; }
+    .domain { display: block; margin: 14px 0; padding: 14px; border-radius: 8px; background: #111820; color: #9cc7ff; overflow-wrap: anywhere; }
+    a { color: #9cc7ff; }
+    .notice { margin-top: 22px; padding: 13px 15px; border-left: 3px solid #58c991; background: #1b2b25; color: #b9f2d2; font-size: 13px; line-height: 1.55; }
+    .footer { margin-top: 25px; color: #8491a0; font: 12px ui-monospace, monospace; }
+  </style>
+</head>
+<body>
+  <main>
+    <span class="tag">SYNTHETIC TRUSTED-DOMAIN NEGATIVE TEST</span>
+    <h1>Official account support reference</h1>
+    <p>This local-only fixture checks that ClickShield does not flag a known brand's genuine, trusted hostname merely because the brand name appears in the URL.</p>
+
+    <section class="panel">
+      <h2>Trusted website reference</h2>
+      <p>The following is the official Microsoft website hostname. The link is deliberately disabled for this test, so no external page is opened and no network request is made.</p>
+      <span class="domain">https://www.microsoft.com/</span>
+      <a href="https://www.microsoft.com/" id="trusted-link">Official Microsoft website (test link — not opened)</a>
+      <p>The page discusses ordinary account-support information. It does not request credentials, present a fake CAPTCHA, or instruct the visitor to run, paste, or execute anything.</p>
+    </section>
+
+    <div class="notice">
+      <strong>Expected result:</strong> No DOMAIN_IMPERSONATION or SUSPICIOUS_DOMAIN signal, and no warning overlay. A zero risk score is expected on this clean test page.
+    </div>
+
+    <div class="footer">ClickShield local trusted-domain negative fixture · no external navigation · no network requests</div>
+  </main>
+  <script>
+    document.getElementById("trusted-link").addEventListener("click", (event) => {
+      event.preventDefault();
+    });
+  </script>
+</body>
+</html>

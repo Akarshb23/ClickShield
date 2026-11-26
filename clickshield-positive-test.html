@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ClickShield Positive Detection Test</title>
+  <style>
+    :root { color-scheme: dark; font-family: ui-sans-serif, system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 28px; color: #f3f4f6; background: #101317; }
+    main { width: min(680px, 100%); padding: 30px; border: 1px solid #39424e; border-radius: 16px; background: #181e25; box-shadow: 0 24px 70px #0008; }
+    .tag { display: inline-block; padding: 5px 9px; border: 1px solid #c08d36; border-radius: 999px; color: #f5c46c; font: 700 11px ui-monospace, monospace; letter-spacing: .08em; }
+    h1 { margin: 18px 0 8px; font-size: clamp(25px, 5vw, 34px); }
+    p, li { color: #c4ccd6; line-height: 1.65; }
+    .mock { display: flex; align-items: center; gap: 14px; margin: 24px 0; padding: 18px; border: 1px solid #485463; border-radius: 10px; background: #202833; }
+    .fake-checkbox { width: 26px; height: 26px; flex: 0 0 26px; border: 2px solid #9aa7b7; border-radius: 4px; background: #111820; }
+    .mock strong { display: block; }
+    .notice { margin-top: 22px; padding: 13px 15px; border-left: 3px solid #d39b43; background: #2b261d; color: #f2d8a9; font-size: 13px; line-height: 1.55; }
+    .footer { margin-top: 25px; color: #8491a0; font: 12px ui-monospace, monospace; }
+  </style>
+</head>
+<body>
+  <main>
+    <span class="tag">SYNTHETIC SECURITY TEST FIXTURE</span>
+    <h1>Verify that you are human</h1>
+    <p>This page is a harmless simulation used to check whether ClickShield detects a fake verification prompt combined with suspicious operating-system instructions.</p>
+
+    <div class="mock" role="group" aria-label="Simulated verification widget">
+      <div class="fake-checkbox" role="checkbox" aria-checked="false" aria-label="I'm not a robot"></div>
+      <div>
+        <strong>I'm not a robot</strong>
+        <span style="color:#9aa7b7;font-size:12px">Simulated verification widget — not a real CAPTCHA</span>
+      </div>
+    </div>
+
+    <h2>Verification instructions (simulated)</h2>
+    <ol>
+      <li>Press Windows + R to open the Run dialog.</li>
+      <li>Paste the verification text and press Enter.</li>
+    </ol>
+
+    <div class="notice">
+      <strong>Safety notice:</strong> This is a detector test only. Do not press the keys described above, do not open Run, and do not paste or execute anything. This page provides no command, script, download, clipboard action, or executable control.
+    </div>
+
+    <div class="footer">ClickShield local positive-detection fixture · no network requests · no scripts</div>
+  </main>
+</body>
+</html>

@@ -1,15 +1,64 @@
-export const TRUSTED_DOMAINS = [
-  "google.com",
-  "microsoft.com",
+
+/**
+ * Domains belonging to recognized services.
+ *
+ * Domain matching must use hostname boundaries:
+ *   google.com                  -> trusted
+ *   accounts.google.com         -> trusted
+ *   google.com.attacker.net     -> NOT trusted
+ *
+ * Keep this list aligned with the legitimateDomains
+ * entries in the impersonation detector.
+ */
+export const TRUSTED_DOMAINS: string[] = [
+  // Cloudflare
   "cloudflare.com",
+  "cloudflare-ipfs.com",
+  "challenges.cloudflare.com",
+
+  // Google
+  "google.com",
+  "gstatic.com",
+  "recaptcha.net",
+
+  // Microsoft
+  "microsoft.com",
+  "live.com",
+  "office.com",
+  "azure.com",
+
+  // Apple
+  "apple.com",
+  "icloud.com",
+
+  // Discord
+  "discord.com",
+  "discordapp.com",
+  "discord.gg",
+
+  // Other monitored services
+  "zoom.us",
+  "metamask.io",
+  "steampowered.com",
+  "steamcommunity.com",
+
+  // Developer and community platforms
   "github.com",
   "stackoverflow.com",
-  "apple.com",
-  "discord.com",
-  "zoom.us",
 ];
 
-export const SUSPICIOUS_TLDS = [
+/**
+ * TLDs monitored for potentially elevated abuse.
+ *
+ * IMPORTANT:
+ * A monitored TLD is not inherently malicious.
+ * TLD matching should be treated as a weak risk signal
+ * and correlated with other suspicious indicators.
+ *
+ * Keep the leading dot for readability. The domain
+ * detector normalizes entries before matching.
+ */
+export const SUSPICIOUS_TLDS: string[] = [
   ".zip",
   ".mov",
   ".top",
@@ -47,4 +96,3 @@ export const SUSPICIOUS_TLDS = [
   ".ml",
   ".ga",
 ];
-

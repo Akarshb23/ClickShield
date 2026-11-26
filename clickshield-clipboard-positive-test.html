@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ClickShield Clipboard Positive Test</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; background: #101317; color: #f3f4f6; }
+    main { width: min(700px, 100%); padding: 30px; border: 1px solid #39424e; border-radius: 16px; background: #181e25; }
+    .tag { display: inline-block; padding: 5px 9px; border: 1px solid #c08d36; border-radius: 999px; color: #f5c46c; font: 700 11px ui-monospace, monospace; letter-spacing: .08em; }
+    h1 { margin: 18px 0 8px; }
+    p, li { color: #c4ccd6; line-height: 1.65; }
+    .panel { margin: 22px 0; padding: 18px; border: 1px solid #485463; border-radius: 10px; background: #202833; }
+    code { display: block; margin: 14px 0; padding: 14px; border-radius: 8px; background: #111820; color: #f5c46c; overflow-wrap: anywhere; }
+    button { padding: 12px 18px; border: 0; border-radius: 8px; background: #eab84f; color: #171717; font-weight: 700; cursor: pointer; }
+    #result { min-height: 24px; margin-top: 12px; color: #a9b7c8; }
+    .notice { margin-top: 22px; padding: 13px 15px; border-left: 3px solid #d39b43; background: #2b261d; color: #f2d8a9; font-size: 13px; line-height: 1.55; }
+    .footer { margin-top: 24px; color: #8491a0; font: 12px ui-monospace, monospace; }
+  </style>
+</head>
+<body>
+  <main>
+    <span class="tag">SYNTHETIC CLIPBOARD POSITIVE TEST</span>
+    <h1>Simulated browser verification</h1>
+    <p>This local-only fixture checks whether ClickShield recognizes a clipboard write containing command-shaped text in a deceptive verification context.</p>
+
+    <section class="panel" aria-label="Simulated verification instructions">
+      <strong>Verification required</strong>
+      <p>For this detector test only, the page presents a harmless command-shaped marker as if it were a verification step.</p>
+      <code id="marker">echo CLICKSHIELD_TEST_ONLY</code>
+      <button id="copy" type="button">Copy verification text</button>
+      <div id="result" role="status" aria-live="polite">No clipboard action attempted yet.</div>
+    </section>
+
+    <div class="notice"><strong>Safety notice:</strong> The marker is inert test text, not a real command or script. Do not paste it into a terminal, Run dialog, console, or any other application. The page does not execute it. It only attempts to write the marker to the clipboard after you click the button.</div>
+    <div class="footer">ClickShield local clipboard fixture · no network requests · no external scripts</div>
+  </main>
+  <script>
+    const button = document.getElementById('copy');
+    const result = document.getElementById('result');
+    const marker = document.getElementById('marker').textContent;
+
+    button.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(marker);
+        result.textContent = 'Clipboard write completed. Check whether ClickShield detected or blocked it.';
+      } catch (error) {
+        result.textContent = `Clipboard write was blocked or unavailable (${error && error.name ? error.name : 'unknown error'}). Check ClickShield for a clipboard signal.`;
+      }
+    });
+  </script>
+</body>
+</html>

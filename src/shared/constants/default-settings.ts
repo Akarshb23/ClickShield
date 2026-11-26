@@ -8,4 +8,3 @@ export const DEFAULT_SETTINGS: ClickShieldSettings = {
   historyRetentionDays: 30,
   soundAlerts: false,
 };
-

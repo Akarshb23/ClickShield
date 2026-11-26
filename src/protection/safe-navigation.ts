@@ -1,38 +1,105 @@
+
 export class SafeNavigation {
-  /**
-   * Safely redirects the browser away from an active attack page
-   */
-  static leavePage(): void {
-    try {
-      window.stop(); // Immediately halt ongoing network requests or script downloads
-      window.location.replace("about:blank");
-    } catch {
-      window.location.href = "about:blank";
-    }
-  }
+  // ==========================================================
+  // TRUSTED DESTINATIONS
+  // ==========================================================
+
+  private static readonly OFFICIAL_DESTINATIONS: Record<
+    string,
+    string
+  > = {
+    cloudflare: "https://www.cloudflare.com/",
+    microsoft: "https://www.microsoft.com/",
+    google: "https://www.google.com/",
+    apple: "https://www.apple.com/",
+  };
 
   /**
-   * Provides direct navigation to the authentic official provider
-   * if brand impersonation was detected.
+   * Resolve an explicitly recognized brand name.
+   *
+   * Never accept arbitrary URLs or partial brand matches.
    */
-  static getAuthenticDestination(brandName?: string): string | null {
-    if (!brandName) return null;
-    const lower = brandName.toLowerCase();
+  private static normalizeBrandName(
+    brandName?: string
+  ): string | null {
+    if (
+      typeof brandName !== "string" ||
+      !brandName.trim()
+    ) {
+      return null;
+    }
 
-    if (lower.includes("cloudflare")) {
-      return "https://www.cloudflare.com";
+    const normalized = brandName
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, " ");
+
+    // Preserve the existing Microsoft Support API behavior.
+    const aliases: Record<string, string> = {
+      "microsoft support": "microsoft",
+    };
+
+    if (aliases[normalized]) {
+      return aliases[normalized];
     }
-    if (lower.includes("microsoft")) {
-      return "https://www.microsoft.com";
-    }
-    if (lower.includes("google")) {
-      return "https://www.google.com";
-    }
-    if (lower.includes("apple")) {
-      return "https://www.apple.com";
+
+    if (
+      Object.prototype.hasOwnProperty.call(
+        this.OFFICIAL_DESTINATIONS,
+        normalized
+      )
+    ) {
+      return normalized;
     }
 
     return null;
   }
-}
 
+  // ==========================================================
+  // LEAVE CURRENT PAGE
+  // ==========================================================
+
+  /**
+   * Safely redirects the browser away from a potentially
+   * malicious webpage.
+   *
+   * Stops ongoing page activity before navigating away.
+   */
+  static leavePage(): void {
+    try {
+      window.stop();
+    } catch {
+      // Continue attempting navigation.
+    }
+
+    try {
+      window.location.replace("about:blank");
+    } catch {
+      try {
+        window.location.href = "about:blank";
+      } catch {
+        // Navigation may be restricted by the browser.
+      }
+    }
+  }
+
+  // ==========================================================
+  // OFFICIAL DESTINATION
+  // ==========================================================
+
+  /**
+   * Provides a fixed official destination for supported brands.
+   *
+   * Destinations are statically defined and cannot be supplied
+   * or overridden by the webpage being scanned.
+   */
+  static getAuthenticDestination(
+    brandName?: string
+  ): string | null {
+    const brand = this.normalizeBrandName(brandName);
+
+    if (!brand) return null;
+
+    return this.OFFICIAL_DESTINATIONS[brand] || null;
+  }
+}

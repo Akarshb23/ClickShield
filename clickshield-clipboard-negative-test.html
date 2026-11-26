@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ClickShield Clipboard Negative Test</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 28px; color: #f3f4f6; background: #101317; }
+    main { width: min(680px, 100%); padding: 30px; border: 1px solid #39424e; border-radius: 16px; background: #181e25; }
+    .tag { display: inline-block; padding: 5px 9px; border: 1px solid #4d8b70; border-radius: 999px; color: #91d5b0; font: 700 11px ui-monospace, monospace; letter-spacing: .08em; }
+    h1 { margin: 18px 0 8px; }
+    p { color: #c4ccd6; line-height: 1.65; }
+    .panel { margin: 24px 0; padding: 20px; border: 1px solid #485463; border-radius: 10px; background: #202833; }
+    code { display: block; margin: 14px 0; padding: 14px; border-radius: 8px; background: #111820; color: #dce6f2; }
+    button { padding: 12px 18px; border: 0; border-radius: 8px; background: #78c99a; color: #102018; font-weight: 700; cursor: pointer; }
+    #status { min-height: 26px; margin-top: 14px; }
+    .notice { margin-top: 22px; padding: 13px 15px; border-left: 3px solid #78c99a; background: #1d2b25; color: #c9ead7; font-size: 13px; line-height: 1.55; }
+    .footer { margin-top: 25px; color: #8491a0; font: 12px ui-monospace, monospace; }
+  </style>
+</head>
+<body>
+  <main>
+    <span class="tag">SYNTHETIC CLIPBOARD NEGATIVE TEST</span>
+    <h1>Ordinary clipboard operation</h1>
+    <p>This local-only fixture checks that ClickShield does not flag harmless clipboard text when there is no fake verification prompt or command-like content.</p>
+
+    <section class="panel">
+      <strong>Copy this ordinary message</strong>
+      <code id="copy-text">Hello! This is a harmless ClickShield clipboard test.</code>
+      <button id="copy-button" type="button">Copy harmless text</button>
+      <p id="status" aria-live="polite">Click the button, then inspect the ClickShield popup.</p>
+    </section>
+
+    <div class="notice">
+      <strong>Expected result:</strong> No CLIPBOARD_MANIPULATION signal and no warning overlay. A zero risk score is expected on this otherwise clean test page.
+    </div>
+
+    <div class="footer">ClickShield local clipboard negative fixture · no network requests · no external scripts</div>
+  </main>
+
+  <script>
+    const button = document.getElementById("copy-button");
+    const text = document.getElementById("copy-text").textContent;
+    const status = document.getElementById("status");
+
+    button.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(text);
+        status.textContent = "Harmless text copied. Check ClickShield for unexpected signals.";
+      } catch {
+        status.textContent = "Clipboard write was unavailable or blocked by the browser. Check ClickShield.";
+      }
+    });
+  </script>
+</body>
+</html>

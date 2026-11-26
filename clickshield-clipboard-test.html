@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ClickShield Clipboard Detection Test</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 28px;
+      color: #f3f4f6;
+      background: #101317;
+    }
+    main {
+      width: min(720px, 100%);
+      padding: 30px;
+      border: 1px solid #39424e;
+      border-radius: 16px;
+      background: #181e25;
+      box-shadow: 0 24px 70px #0008;
+    }
+    .tag {
+      display: inline-block;
+      padding: 5px 9px;
+      border: 1px solid #c08d36;
+      border-radius: 999px;
+      color: #f5c46c;
+      font: 700 11px ui-monospace, monospace;
+      letter-spacing: .08em;
+    }
+    h1 { margin: 18px 0 8px; font-size: clamp(25px, 5vw, 34px); }
+    p, li { color: #c4ccd6; line-height: 1.65; }
+    .mock {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin: 24px 0;
+      padding: 18px;
+      border: 1px solid #485463;
+      border-radius: 10px;
+      background: #202833;
+    }
+    .fake-checkbox {
+      width: 26px;
+      height: 26px;
+      flex: 0 0 26px;
+      border: 2px solid #9aa7b7;
+      border-radius: 4px;
+      background: #111820;
+    }
+    .mock strong { display: block; }
+    .test-panel {
+      margin-top: 24px;
+      padding: 18px;
+      border: 1px solid #485463;
+      border-radius: 10px;
+      background: #202833;
+    }
+    .test-value {
+      display: block;
+      overflow-wrap: anywhere;
+      margin: 12px 0;
+      padding: 12px;
+      border: 1px solid #485463;
+      border-radius: 8px;
+      color: #f5c46c;
+      background: #111820;
+      font: 13px ui-monospace, monospace;
+    }
+    button {
+      border: 1px solid #c08d36;
+      border-radius: 8px;
+      padding: 11px 15px;
+      color: #171717;
+      background: #e5b34f;
+      font: 700 13px ui-sans-serif, system-ui, sans-serif;
+      cursor: pointer;
+    }
+    button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+    #copy-status { min-height: 24px; margin-bottom: 0; font-size: 13px; }
+    .notice {
+      margin-top: 22px;
+      padding: 13px 15px;
+      border-left: 3px solid #d39b43;
+      background: #2b261d;
+      color: #f2d8a9;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+    .footer {
+      margin-top: 25px;
+      color: #8491a0;
+      font: 12px ui-monospace, monospace;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <span class="tag">SYNTHETIC CLIPBOARD SECURITY TEST</span>
+    <h1>Verify your browser session</h1>
+    <p>
+      This isolated test fixture checks whether ClickShield recognizes a deceptive
+      verification prompt that asks a visitor to copy text into the clipboard.
+      It is not a real verification service.
+    </p>
+
+    <div class="mock" role="group" aria-label="Simulated verification widget">
+      <div class="fake-checkbox" role="checkbox" aria-checked="false" aria-label="I'm not a robot"></div>
+      <div>
+        <strong>I'm not a robot</strong>
+        <span style="color:#9aa7b7;font-size:12px">Simulated verification widget — not a real CAPTCHA</span>
+      </div>
+    </div>
+
+    <section class="test-panel" aria-labelledby="clipboard-heading">
+      <h2 id="clipboard-heading">Clipboard verification step (simulated)</h2>
+      <p>
+        To complete this simulated check, copy the verification text shown below.
+        ClickShield should inspect the attempted clipboard write and apply its
+        configured protection policy.
+      </p>
+      <code class="test-value" id="test-value">CLICKSHIELD_CLIPBOARD_TEST_ONLY</code>
+      <button id="copy-button" type="button">Copy verification text</button>
+      <p id="copy-status" role="status" aria-live="polite">No clipboard action has been attempted.</p>
+    </section>
+
+    <div class="notice">
+      <strong>Safety notice:</strong>
+      This test copies only the harmless marker text shown above. It does not
+      contain a shell command, script, URL, download, or executable instruction.
+      Do not paste test content into a terminal or run dialog.
+    </div>
+
+    <div class="footer">ClickShield local clipboard fixture · no network requests · clipboard access occurs only after button click</div>
+  </main>
+
+  <script>
+    const copyButton = document.getElementById("copy-button");
+    const testValue = document.getElementById("test-value");
+    const copyStatus = document.getElementById("copy-status");
+
+    copyButton.addEventListener("click", async () => {
+      const value = testValue.textContent.trim();
+
+      try {
+        await navigator.clipboard.writeText(value);
+        copyStatus.textContent = "Clipboard write completed. Check ClickShield for a detected signal.";
+      } catch (error) {
+        copyStatus.textContent =
+          error && error.name === "NotAllowedError"
+            ? "Clipboard write was blocked by browser or ClickShield protection."
+            : "Clipboard write was unavailable or blocked. Check ClickShield and browser permissions.";
+      }
+    });
+  </script>
+</body>
+</html>

@@ -8,14 +8,13 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-    crx({ manifest })
+    crx({ manifest }),
   ],
   build: {
     rollupOptions: {
       input: {
-        dashboard: "src/dashboard/index.html"
-      }
-    }
-  }
+        dashboard: "src/dashboard/index.html",
+      },
+    },
+  },
 });
-

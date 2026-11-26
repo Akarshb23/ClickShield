@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ClickShield CAPTCHA Negative Test</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 28px; background: #101317; color: #f3f4f6; }
+    main { width: min(680px, 100%); padding: 30px; border: 1px solid #39424e; border-radius: 16px; background: #181e25; }
+    .tag { display: inline-block; padding: 5px 9px; border: 1px solid #4c9b79; border-radius: 999px; color: #83d6aa; font: 700 11px ui-monospace, monospace; letter-spacing: .08em; }
+    h1 { margin: 18px 0 8px; }
+    p { color: #c4ccd6; line-height: 1.65; }
+    .panel { margin: 24px 0; padding: 20px; border: 1px solid #485463; border-radius: 10px; background: #202833; }
+    .check { display: flex; align-items: center; gap: 12px; padding: 16px; border: 1px solid #566273; border-radius: 8px; }
+    .check input { width: 22px; height: 22px; }
+    .notice { margin-top: 22px; padding: 13px 15px; border-left: 3px solid #55bd88; background: #1c3028; color: #b9f0d0; font-size: 13px; line-height: 1.55; }
+    .footer { margin-top: 25px; color: #8491a0; font: 12px ui-monospace, monospace; }
+  </style>
+</head>
+<body>
+  <main>
+    <span class="tag">SYNTHETIC CAPTCHA NEGATIVE TEST</span>
+    <h1>Simple human check</h1>
+    <p>This harmless local fixture contains a basic checkbox and ordinary explanatory text. It does not imitate a CAPTCHA provider or ask you to run, paste, or copy anything.</p>
+    <section class="panel">
+      <h2>Confirm you are viewing this page</h2>
+      <label class="check">
+        <input type="checkbox">
+        <span>I have read this demonstration page</span>
+      </label>
+      <p>This checkbox is a normal HTML control. It does not verify identity or communicate with a service.</p>
+    </section>
+    <div class="notice">
+      <strong>Expected result:</strong> No FAKE_CAPTCHA, SUSPICIOUS_INSTRUCTION,
+      EXECUTION_INSTRUCTION, or CLIPBOARD_MANIPULATION signal. A zero risk score
+      is expected on this clean test page.
+    </div>
+    <div class="footer">ClickShield local CAPTCHA negative fixture · no network requests · no scripts</div>
+  </main>
+</body>
+</html>
