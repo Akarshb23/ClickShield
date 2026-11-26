@@ -1,14 +1,3 @@
-import type { SignalType } from "../types/signal";
-
-export const SIGNAL_WEIGHTS: Record<SignalType, number> = {
-  FAKE_CAPTCHA: 20,
-  SUSPICIOUS_INSTRUCTION: 15,
-  CLIPBOARD_MANIPULATION: 25,
-  EXECUTION_INSTRUCTION: 25,
-  SUSPICIOUS_DOMAIN: 10,
-  DOMAIN_IMPERSONATION: 15,
-};
-
 export const RISK_THRESHOLDS = {
   LOW: 0,
   SUSPICIOUS: 30,
@@ -22,4 +11,3 @@ export const BADGE_COLORS = {
   HIGH: "#EA580C",      // Orange
   CRITICAL: "#DC2626",  // Red
 } as const;
-

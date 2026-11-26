@@ -1,3 +1,4 @@
+import { calculateRisk } from "../engine/risk-engine";
 import { StorageManager } from "../storage/storage-manager";
 import { BADGE_COLORS } from "../shared/constants/risk-levels";
 import { logger } from "../shared/utils/logger";
@@ -110,7 +111,13 @@ async function handleIncomingMessage(
         }
       }
 
-      return { success: true, effectiveScore };
+      return {
+        success: true,
+        effectiveScore,
+        effectiveLevel,
+        protectionEnabled: settings.protectionEnabled,
+        isAllowlisted: isAllowed,
+      };
     }
 
     case "SUBFRAME_THREAT": {
@@ -129,37 +136,36 @@ async function handleIncomingMessage(
         return { success: false };
       }
 
-      // Add signal to existing tab state if present
+      const result = calculateRisk([...(currentState?.signals ?? []), signal]);
       if (currentState) {
-        const updatedSignals = [...currentState.signals, signal];
-        const newScore = Math.min(100, (currentState.score || 0) + 25);
-        currentState.score = newScore;
-        currentState.level = newScore >= 80 ? "CRITICAL" : newScore >= 60 ? "HIGH" : "SUSPICIOUS";
-        currentState.signals = updatedSignals;
+        currentState.score = result.score;
+        currentState.level = result.level;
+        currentState.signals = result.signals;
         await StorageManager.setTabState(tabId, currentState);
-
-        try {
-          await chrome.action.setBadgeText({ tabId, text: String(newScore) });
-          await chrome.action.setBadgeBackgroundColor({
-            tabId,
-            color: BADGE_COLORS[currentState.level as RiskLevel] || BADGE_COLORS.CRITICAL,
-          });
-        } catch {}
       }
+
+      const badgeText = result.score > 0 ? String(result.score) : "";
+      try {
+        await chrome.action.setBadgeText({ tabId, text: badgeText });
+        await chrome.action.setBadgeBackgroundColor({
+          tabId,
+          color: BADGE_COLORS[result.level as RiskLevel] || BADGE_COLORS.LOW,
+        });
+      } catch {}
 
       await StorageManager.addThreatRecord({
         id: `threat-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
         hostname,
         url: sender.tab?.url || "",
         timestamp: Date.now(),
-        riskScore: 85,
-        riskLevel: "CRITICAL",
-        signals: [signal.type],
-        details: [signal.reason],
+        riskScore: result.score,
+        riskLevel: result.level,
+        signals: result.signals.map((s) => s.type),
+        details: result.signals.map((s) => s.reason),
         action: "CLIPBOARD_INTERCEPTED",
       });
 
-      return { success: true };
+      return { success: true, score: result.score, level: result.level };
     }
 
     case "GET_TAB_STATE": {

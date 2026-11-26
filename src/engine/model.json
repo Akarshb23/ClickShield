@@ -1,0 +1,146 @@
+{
+  "intercept": -5.560320704,
+  "terms": [
+    {
+      "signals": [
+        "FAKE_CAPTCHA"
+      ],
+      "coefficient": 3.206355764
+    },
+    {
+      "signals": [
+        "SUSPICIOUS_INSTRUCTION"
+      ],
+      "coefficient": 2.028562528
+    },
+    {
+      "signals": [
+        "CLIPBOARD_MANIPULATION"
+      ],
+      "coefficient": 3.410860782
+    },
+    {
+      "signals": [
+        "EXECUTION_INSTRUCTION"
+      ],
+      "coefficient": 0.71326374
+    },
+    {
+      "signals": [
+        "SUSPICIOUS_DOMAIN"
+      ],
+      "coefficient": -0.289227306
+    },
+    {
+      "signals": [
+        "DOMAIN_IMPERSONATION"
+      ],
+      "coefficient": 0.742621405
+    },
+    {
+      "signals": [
+        "FAKE_CAPTCHA",
+        "SUSPICIOUS_INSTRUCTION"
+      ],
+      "coefficient": 2.617535071
+    },
+    {
+      "signals": [
+        "FAKE_CAPTCHA",
+        "CLIPBOARD_MANIPULATION"
+      ],
+      "coefficient": 1.517148951
+    },
+    {
+      "signals": [
+        "FAKE_CAPTCHA",
+        "EXECUTION_INSTRUCTION"
+      ],
+      "coefficient": 3.296016151
+    },
+    {
+      "signals": [
+        "FAKE_CAPTCHA",
+        "SUSPICIOUS_DOMAIN"
+      ],
+      "coefficient": -0.688542806
+    },
+    {
+      "signals": [
+        "FAKE_CAPTCHA",
+        "DOMAIN_IMPERSONATION"
+      ],
+      "coefficient": -0.83204747
+    },
+    {
+      "signals": [
+        "SUSPICIOUS_INSTRUCTION",
+        "CLIPBOARD_MANIPULATION"
+      ],
+      "coefficient": 2.69391149
+    },
+    {
+      "signals": [
+        "SUSPICIOUS_INSTRUCTION",
+        "EXECUTION_INSTRUCTION"
+      ],
+      "coefficient": 1.034569499
+    },
+    {
+      "signals": [
+        "SUSPICIOUS_INSTRUCTION",
+        "SUSPICIOUS_DOMAIN"
+      ],
+      "coefficient": 0.605878203
+    },
+    {
+      "signals": [
+        "SUSPICIOUS_INSTRUCTION",
+        "DOMAIN_IMPERSONATION"
+      ],
+      "coefficient": 1.038287535
+    },
+    {
+      "signals": [
+        "CLIPBOARD_MANIPULATION",
+        "EXECUTION_INSTRUCTION"
+      ],
+      "coefficient": -0.943382042
+    },
+    {
+      "signals": [
+        "CLIPBOARD_MANIPULATION",
+        "SUSPICIOUS_DOMAIN"
+      ],
+      "coefficient": 0.605878203
+    },
+    {
+      "signals": [
+        "CLIPBOARD_MANIPULATION",
+        "DOMAIN_IMPERSONATION"
+      ],
+      "coefficient": 3.104813344
+    },
+    {
+      "signals": [
+        "EXECUTION_INSTRUCTION",
+        "SUSPICIOUS_DOMAIN"
+      ],
+      "coefficient": -0.119049773
+    },
+    {
+      "signals": [
+        "EXECUTION_INSTRUCTION",
+        "DOMAIN_IMPERSONATION"
+      ],
+      "coefficient": 1.650756827
+    },
+    {
+      "signals": [
+        "SUSPICIOUS_DOMAIN",
+        "DOMAIN_IMPERSONATION"
+      ],
+      "coefficient": 0.0
+    }
+  ]
+}

@@ -14,7 +14,7 @@ describe("ClickShield Risk Engine", () => {
       { type: "FAKE_CAPTCHA", reason: "Found fake captcha 1" },
       { type: "FAKE_CAPTCHA", reason: "Found fake captcha 2" },
     ]);
-    expect(result.score).toBe(20);
+    expect(result.score).toBe(calculateRisk([result.signals[0]]).score);
     expect(result.signals).toHaveLength(1);
     expect(result.level).toBe("LOW");
   });
@@ -26,23 +26,20 @@ describe("ClickShield Risk Engine", () => {
       { type: "EXECUTION_INSTRUCTION", reason: "Terminal launch requested" },
       { type: "CLIPBOARD_MANIPULATION", reason: "Clipboard write hooked" },
     ]);
-    // 20 + 15 + 25 + 25 = 85
-    expect(result.score).toBe(85);
+    expect(result.score).toBeGreaterThanOrEqual(80);
     expect(result.level).toBe("CRITICAL");
   });
 
-  it("caps total risk score at 100 max even when raw score exceeds 100", () => {
+  it("keeps the learned score within the display range for all six features", () => {
     const result = calculateRisk([
-      { type: "FAKE_CAPTCHA", reason: "1" },            // 20
-      { type: "SUSPICIOUS_INSTRUCTION", reason: "2" },    // 15
-      { type: "CLIPBOARD_MANIPULATION", reason: "3" },    // 25
-      { type: "EXECUTION_INSTRUCTION", reason: "4" },     // 25
-      { type: "SUSPICIOUS_DOMAIN", reason: "5" },         // 10
-      { type: "DOMAIN_IMPERSONATION", reason: "6" },      // 15
+      { type: "FAKE_CAPTCHA", reason: "1" },
+      { type: "SUSPICIOUS_INSTRUCTION", reason: "2" },
+      { type: "CLIPBOARD_MANIPULATION", reason: "3" },
+      { type: "EXECUTION_INSTRUCTION", reason: "4" },
+      { type: "SUSPICIOUS_DOMAIN", reason: "5" },
+      { type: "DOMAIN_IMPERSONATION", reason: "6" },
     ]);
-    // Raw sum = 110, capped at 100
-    expect(result.score).toBe(100);
+    expect(result.score).toBeLessThanOrEqual(100);
     expect(result.level).toBe("CRITICAL");
   });
 });
-

@@ -1,0 +1,34 @@
+split,case,label,signals
+train,storefront,0,
+train,custom puzzle,0,F
+train,shortcut guide,0,I
+train,clipboard tool,0,C
+train,shell manual,0,E
+train,unusual domain,0,D
+train,unofficial brand article,0,B
+train,puzzle on unusual domain,0,F D
+train,keyboard help on fan site,0,I B
+train,command reference mirror,0,E D
+train,clipboard example on tech blog,0,C E
+train,branded verification mockup,0,F B
+train,terminal tutorial,0,I E
+train,command reference on brand community,0,E B
+train,verification requests terminal execution,1,F E
+train,challenge copies command,1,F C
+train,fake challenge gives run instructions,1,F I
+train,clipboard coercion with keyboard sequence,1,I C
+train,branded prompt copies instruction,1,C B
+train,branded instruction chain,1,I E B
+train,verification copies terminal snippet,1,F C E
+train,unusual host prompts clipboard execution,1,I C D
+train,branded fake verification gives instructions,1,F I B
+train,clipboard launch sequence,1,I C E
+train,full verification coercion,1,F I C E
+test,custom puzzle on branded mirror,0,F D B
+test,shortcut guide on uncommon domain,0,I D
+test,unofficial shell reference mirror,0,E D B
+test,ordinary branded mirror,0,D B
+test,verification terminal instruction on unusual host,1,F E D
+test,clipboard coercion in branded challenge,1,F C B
+test,branded clipboard execution sequence,1,I C E B
+test,verification keyboard sequence on unusual host,1,F I D

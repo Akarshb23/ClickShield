@@ -19,20 +19,14 @@ export function correlateSignals(
 
   const hasFakeCaptcha = types.has("FAKE_CAPTCHA");
   const hasExecution = types.has("EXECUTION_INSTRUCTION");
-  const hasInstruction = types.has("SUSPICIOUS_INSTRUCTION");
   const hasImpersonation = types.has("DOMAIN_IMPERSONATION");
-  const hasClipboard = types.has("CLIPBOARD_MANIPULATION");
-
-  // Classic ClickFix signature: Deceptive verification lure + coercive terminal execution instruction or payload
-  const hasDeceptiveLure = hasFakeCaptcha || hasImpersonation;
-  const hasAttackAction = hasExecution || hasClipboard || (hasInstruction && (hasExecution || hasClipboard));
-  const isClickFixAttack = (hasFakeCaptcha && hasExecution) || (hasDeceptiveLure && hasAttackAction);
+  const isClickFixAttack = scanResult.level === "HIGH" || scanResult.level === "CRITICAL";
 
   let primaryAttackVector = "Standard page analysis";
   let recommendedAction = "Passive monitoring active";
 
   if (isClickFixAttack) {
-    primaryAttackVector = "ClickFix Attack (Fake Verification Coercing Terminal Execution)";
+    primaryAttackVector = "Suspected ClickFix Attack";
     recommendedAction = "Do not copy, paste, or execute instructions from this webpage. Leave immediately.";
   } else if (hasFakeCaptcha && hasImpersonation) {
     primaryAttackVector = "Brand Impersonation & Fake Verification";
@@ -51,4 +45,3 @@ export function correlateSignals(
     recommendedAction,
   };
 }
-

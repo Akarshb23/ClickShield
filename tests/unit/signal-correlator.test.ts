@@ -19,8 +19,7 @@ describe("Signal Correlator", () => {
     ]);
 
     expect(verdict.isClickFixAttack).toBe(false);
-    expect(verdict.score).toBe(10);
+    expect(verdict.score).toBeLessThan(30);
     expect(verdict.level).toBe("LOW");
   });
 });
-

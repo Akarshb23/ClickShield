@@ -27,17 +27,7 @@ export class InterventionManager {
     if (this.userDismissed || this.isOverlayActive) return;
     if (typeof window !== "undefined" && window !== window.top) return;
 
-    const types = new Set(scanResult.signals.map((s) => s.type));
-    const hasDeceptiveLure = types.has("FAKE_CAPTCHA") || types.has("DOMAIN_IMPERSONATION");
-    const hasAttackAction =
-      types.has("EXECUTION_INSTRUCTION") ||
-      types.has("CLIPBOARD_MANIPULATION") ||
-      (types.has("SUSPICIOUS_INSTRUCTION") && types.has("EXECUTION_INSTRUCTION"));
-
-    const isClickFixAttack = hasDeceptiveLure && hasAttackAction;
-
-    // Trigger intervention overlay on high threat ClickFix attacks (Score >= 60) or critical threats (Score >= 80)
-    const shouldIntervene = (isClickFixAttack && scanResult.score >= 60) || scanResult.score >= 80;
+    const shouldIntervene = scanResult.level === "HIGH" || scanResult.level === "CRITICAL";
 
     if (shouldIntervene && !WarningOverlay.isVisible()) {
       this.isOverlayActive = true;
@@ -57,4 +47,3 @@ export class InterventionManager {
     WarningOverlay.hide();
   }
 }
-

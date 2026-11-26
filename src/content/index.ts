@@ -20,9 +20,6 @@ function executeScan(forceNotify = false): ScanResult | null {
       url: window.location.href,
     });
 
-    // Check if intervention overlay should be displayed
-    InterventionManager.evaluateAndIntervene(result);
-
     if (forceNotify || result.score !== lastScore || dynamicSignals.length > 0) {
       lastScore = result.score;
       chrome.runtime
@@ -30,7 +27,16 @@ function executeScan(forceNotify = false): ScanResult | null {
           type: "SCAN_RESULT",
           payload: result,
         })
-        .catch(() => {});
+        .then((res) => {
+          if (res && (!res.protectionEnabled || res.isAllowlisted)) {
+            InterventionManager.resetSession();
+            return;
+          }
+          InterventionManager.evaluateAndIntervene(result);
+        })
+        .catch(() => {
+          InterventionManager.evaluateAndIntervene(result);
+        });
     }
 
     return result;
