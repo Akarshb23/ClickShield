@@ -63,32 +63,45 @@ ClickShield provides a **browser-level behavioral defense layer** that intercept
 
 ## Installation and Setup Instructions
 
-### Prerequisites
-- **Node.js** (v18+ recommended) and **npm**
-- **Google Chrome** (or any Chromium-based browser such as Microsoft Edge / Brave)
+### Option 1: Quick Install from GitHub Releases (Recommended for Users — No Coding Required)
 
-### 1. Clone the Repository
+1. Go to the [ClickShield Releases page](https://github.com/Akarshb23/ClickShield/releases) and download **`clickshield-extension-v0.1.0.zip`** under **Assets**.
+2. **Extract (unzip)** the downloaded `.zip` file into a folder on your computer *(keep this folder saved—Chrome needs it to remain on disk)*.
+3. Open **Google Chrome** (or any Chromium-based browser like Brave/Edge) and type `chrome://extensions` in the address bar, then press **Enter**.
+4. Turn **ON** the **Developer mode** toggle in the top-right corner.
+5. Click **Load unpacked** (top-left) and select the **extracted folder** (the folder containing `manifest.json`).
+6. Click the **Extensions (puzzle icon)** in Chrome's top-right toolbar and **Pin** **ClickShield** to view the live risk badge.
+
+---
+
+### Option 2: Build from Source (For Developers)
+
+#### Prerequisites
+- **Node.js** (v18+ recommended) and **npm**
+- **Google Chrome** (or any Chromium-based browser)
+
+#### 1. Clone the Repository
 ```bash
 git clone https://github.com/Akarshb23/ClickShield.git
 cd ClickShield
 ```
 
-### 2. Install Dependencies
+#### 2. Install Dependencies
 ```bash
 npm install
 ```
 
-### 3. Build the Extension
+#### 3. Build the Extension
 ```bash
 npm run build
 ```
 This runs TypeScript type-checking (`tsc`) and bundles the extension into the `dist/` directory.
 
-### 4. Load the Extension in Chrome
-1. Open Google Chrome and navigate to `chrome://extensions/`.
-2. Enable **Developer mode** using the toggle in the top-right corner.
+#### 4. Load the Built Extension in Chrome
+1. Open Google Chrome and go to `chrome://extensions`.
+2. Turn **ON** **Developer mode** (top-right corner).
 3. Click **Load unpacked** and select the `dist/` folder inside `ClickShield`.
-4. Pin **ClickShield** from the extensions toolbar menu to view the live risk badge.
+4. Pin **ClickShield** from the extensions toolbar menu.
 
 ---
 
