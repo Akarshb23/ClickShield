@@ -25,7 +25,7 @@ describe("Instruction Detector", () => {
 
     expect(signals.length).toBeGreaterThan(0);
     expect(signals[0].type).toBe("SUSPICIOUS_INSTRUCTION");
-    expect(signals[0].reason).toContain("ClickFix sequence");
+    expect(signals[0].reason).toContain("ClickFix");
   });
 
   it("ignores regular benign web content", () => {

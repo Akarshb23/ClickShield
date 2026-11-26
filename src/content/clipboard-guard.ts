@@ -98,11 +98,13 @@ export class ClipboardGuard {
     try {
       // Register the storage listener before loading the
       // initial configuration to avoid missing updates.
-      chrome.storage.onChanged.addListener(
-        (changes, areaName) => {
-          this.handleStorageChanges(changes, areaName);
-        }
-      );
+      if (typeof chrome !== "undefined" && chrome.storage?.onChanged) {
+        chrome.storage.onChanged.addListener(
+          (changes, areaName) => {
+            this.handleStorageChanges(changes, areaName);
+          }
+        );
+      }
 
       // Listen for programmatic clipboard notifications
       // from the MAIN-world clipboard monitor.
@@ -148,6 +150,14 @@ export class ClipboardGuard {
 
   private static async loadConfiguration(): Promise<void> {
     const revision = this.configurationRevision;
+
+    if (typeof chrome === "undefined" || !chrome.storage?.local) {
+      this.protectionEnabled = true;
+      this.clipboardProtectionEnabled = true;
+      this.allowlist = [];
+      this.configurationReady = true;
+      return;
+    }
 
     try {
       const stored = await chrome.storage.local.get([
@@ -653,9 +663,15 @@ export class ClipboardGuard {
         "Suspicious programmatic clipboard operation detected."
       );
 
+      const safeSnippet =
+        typeof detail.snippet === "string" && detail.snippet.trim()
+          ? detail.snippet.trim().slice(0, 100)
+          : undefined;
+
       this.reportThreat(
         "Webpage script attempted a programmatic clipboard write containing suspicious system command syntax.",
-        "Programmatic clipboard command detected."
+        "Programmatic clipboard command detected.",
+        safeSnippet
       );
     } catch (error) {
       logger.debug(
@@ -729,7 +745,8 @@ export class ClipboardGuard {
 
   private static reportThreat(
     reason: string,
-    interventionReason: string
+    interventionReason: string,
+    snippet?: string
   ): void {
     const now = Date.now();
 
@@ -747,6 +764,7 @@ export class ClipboardGuard {
     const signal: ThreatSignal = {
       type: "CLIPBOARD_MANIPULATION",
       reason: reason.slice(0, MAX_REASON_LENGTH),
+      ...(snippet ? { snippet } : {}),
     };
 
     try {

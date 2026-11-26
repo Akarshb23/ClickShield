@@ -8,10 +8,10 @@ export class SafeNavigation {
     string,
     string
   > = {
-    cloudflare: "https://www.cloudflare.com/",
-    microsoft: "https://www.microsoft.com/",
-    google: "https://www.google.com/",
-    apple: "https://www.apple.com/",
+    cloudflare: "https://www.cloudflare.com",
+    microsoft: "https://www.microsoft.com",
+    google: "https://www.google.com",
+    apple: "https://www.apple.com",
   };
 
   /**
